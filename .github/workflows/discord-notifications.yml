@@ -26,7 +26,7 @@ jobs:
           embed-url: "${{ github.event.pull_request.html_url }}"
           embed-author-name: "${{ github.event.pull_request.user.login }}"
           embed-author-icon-url: "${{ github.event.pull_request.user.avatar_url }}"
-          embed-color: "00FFFF" # Aqua/Cyan color
+          embed-color: 65535 # Aqua/Cyan color
 
       - name: Send Discord Notification on Merge
         # This step only runs if the event was a push and the commit is a merge commit (i.e., a PR was merged)
@@ -39,4 +39,4 @@ jobs:
           embed-url: "${{ github.event.head_commit.url }}"
           embed-author-name: "${{ github.sender.login }}"
           embed-author-icon-url: "${{ github.sender.avatar_url }}"
-          embed-color: "00FF00" # Green color
+          embed-color: 65280 # Green color
