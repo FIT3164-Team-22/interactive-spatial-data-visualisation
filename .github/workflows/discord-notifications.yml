@@ -1,0 +1,42 @@
+name: Discord Notifications
+
+# This workflow runs on two different events
+on:
+  # 1. When a pull request is opened targeting the main branch
+  pull_request:
+    branches: [ "main" ]
+    types: [ "opened" ]
+
+  # 2. When a push happens to the main branch (which includes merges)
+  push:
+    branches: [ "main" ]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification on PR Opened
+        # This step only runs if the event was a pull request
+        if: github.event_name == 'pull_request'
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          content: "@everyone A new pull request is ready for review!"
+          embed-title: "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+          embed-url: "${{ github.event.pull_request.html_url }}"
+          embed-author-name: "${{ github.event.pull_request.user.login }}"
+          embed-author-icon-url: "${{ github.event.pull_request.user.avatar_url }}"
+          embed-color: 65535 # Aqua/Cyan color
+
+      - name: Send Discord Notification on PR Merged
+        # This step only runs if the event was a pull request closed by merging
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          content: "@everyone A pull request was just merged into main!"
+          embed-title: "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+          embed-url: "${{ github.event.pull_request.html_url }}"
+          embed-author-name: "${{ github.event.pull_request.user.login }}"
+          embed-author-icon-url: "${{ github.event.pull_request.user.avatar_url }}"
+          embed-color: 65280 # Green color
