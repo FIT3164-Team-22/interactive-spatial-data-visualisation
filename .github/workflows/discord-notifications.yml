@@ -28,15 +28,15 @@ jobs:
           embed-author-icon-url: "${{ github.event.pull_request.user.avatar_url }}"
           embed-color: 65535 # Aqua/Cyan color
 
-      - name: Send Discord Notification on Merge
-        # This step only runs if the event was a push and the commit is a merge commit (i.e., a PR was merged)
-        if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Merge pull request')
+      - name: Send Discord Notification on PR Merged
+        # This step only runs if the event was a pull request closed by merging
+        if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
           content: "@everyone A pull request was just merged into main!"
-          embed-title: "${{ github.event.head_commit.message }}"
-          embed-url: "${{ github.event.head_commit.url }}"
-          embed-author-name: "${{ github.sender.login }}"
-          embed-author-icon-url: "${{ github.sender.avatar_url }}"
+          embed-title: "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+          embed-url: "${{ github.event.pull_request.html_url }}"
+          embed-author-name: "${{ github.event.pull_request.user.login }}"
+          embed-author-icon-url: "${{ github.event.pull_request.user.avatar_url }}"
           embed-color: 65280 # Green color
