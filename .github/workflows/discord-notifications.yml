@@ -29,8 +29,8 @@ jobs:
           embed-color: "00FFFF" # Aqua/Cyan color
 
       - name: Send Discord Notification on Merge
-        # This step only runs if the event was a push and not a branch creation (i.e., a merge or direct push)
-        if: github.event_name == 'push' && github.event.created == false
+        # This step only runs if the event was a push and the commit is a merge commit (i.e., a PR was merged)
+        if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Merge pull request')
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
