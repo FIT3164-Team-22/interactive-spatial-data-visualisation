@@ -1,5 +1,7 @@
 name: Discord Notifications
 
+permissions: {}
+
 on:
   pull_request:
     branches: [ "main" ]
@@ -16,7 +18,7 @@ jobs:
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          content: "@everyone A new pull request is ready for review!"
+          content: "A new pull request is ready for review!"
           embed-title: "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
           embed-url: "${{ github.event.pull_request.html_url }}"
           embed-author-name: "${{ github.event.pull_request.user.login }}"
@@ -28,7 +30,7 @@ jobs:
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          content: "@everyone A pull request was just merged into main!"
+          content: "A pull request was just merged into main!"
           embed-title: "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
           embed-url: "${{ github.event.pull_request.html_url }}"
           embed-author-name: "${{ github.event.pull_request.user.login }}"
@@ -40,7 +42,7 @@ jobs:
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          content: "@everyone Code was pushed directly to main!"
+          content: "Code was pushed directly to main!"
           embed-title: "Direct push by ${{ github.actor }}"
           embed-url: "${{ github.event.compare }}"
           embed-author-name: "${{ github.actor }}"
