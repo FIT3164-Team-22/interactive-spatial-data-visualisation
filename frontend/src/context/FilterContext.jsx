@@ -20,6 +20,9 @@ export const FilterProvider = ({ children }) => {
   const [clusteringEnabled, setClusteringEnabled] = useState(true);
   const [showStations, setShowStations] = useState(true);
 
+  // Chart settings
+  const [aggregation, setAggregation] = useState('daily');
+
   const filters = useMemo(() => ({
     state: selectedState,
     startDate,
@@ -45,8 +48,10 @@ export const FilterProvider = ({ children }) => {
     setClusteringEnabled,
     showStations,
     setShowStations,
+    aggregation,
+    setAggregation,
     filters
-  }), [selectedState, startDate, endDate, selectedMetric, selectedStationId, mapStyle, clusteringEnabled, showStations, filters]);
+  }), [selectedState, startDate, endDate, selectedMetric, selectedStationId, mapStyle, clusteringEnabled, showStations, aggregation, filters]);
 
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
 };

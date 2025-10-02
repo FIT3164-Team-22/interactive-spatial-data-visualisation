@@ -6,15 +6,13 @@ import { useTheme } from '../../context/ThemeContext';
 import { format, parseISO } from 'date-fns';
 import { metricConfig } from '../../constants/metrics';
 import EmptyState from '../common/EmptyState';
-import SkeletonLoader from '../common/SkeletonLoader';
 import { toast } from '../../utils/toast';
 
 export default function TimeSeriesChart() {
-  const { selectedStationId, startDate, endDate, selectedMetric } = useFilters();
+  const { selectedStationId, startDate, endDate, selectedMetric, aggregation, setAggregation } = useFilters();
   const { isDark } = useTheme();
   const chartRef = useRef(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [aggregation, setAggregation] = useState('daily');
 
   // Calculate date range in days
   const daysDifference = useMemo(() => {
@@ -108,7 +106,6 @@ export default function TimeSeriesChart() {
       link.click();
       toast.success('Chart exported successfully!');
     } catch (error) {
-      console.error('Failed to export chart:', error);
       toast.error('Failed to export chart. Please try again.');
     } finally {
       setIsExporting(false);
@@ -120,7 +117,17 @@ export default function TimeSeriesChart() {
   }
 
   if (isLoading) {
-    return <SkeletonLoader type="chart" />;
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-white dark:bg-custom-card">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Loading chart...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -132,8 +139,8 @@ export default function TimeSeriesChart() {
   }
 
   return (
-    <div className="h-full w-full p-4">
-      <div className="flex flex-col gap-3 mb-4">
+    <div className="h-full w-full p-4 flex flex-col">
+      <div className="flex flex-col gap-3 mb-4 flex-shrink-0">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{stationName}</h3>
           <button
@@ -166,8 +173,8 @@ export default function TimeSeriesChart() {
           </span>
         </div>
       </div>
-      <div ref={chartRef}>
-        <ResponsiveContainer width="100%" height={400}>
+      <div ref={chartRef} className="flex-1 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#4B5563' : '#E5E7EB'} />
           <XAxis

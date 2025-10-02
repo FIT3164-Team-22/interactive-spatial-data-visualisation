@@ -4,6 +4,10 @@ from sqlalchemy.orm import sessionmaker
 from app.models import Base, Station, WeatherData
 from datetime import datetime
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
@@ -17,7 +21,7 @@ def init_database():
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    print("Loading stations from Parquet...")
+    logger.info("Loading stations from Parquet...")
     stations_df = pd.read_parquet(os.path.join(DATA_DIR, 'bomstationsdb.parquet'))
 
     station_map = {}
@@ -33,9 +37,9 @@ def init_database():
         station_map[(row['State'], row['Station Name'])] = station.id
 
     session.commit()
-    print(f"Inserted {len(station_map)} stations")
+    logger.info(f"Inserted {len(station_map)} stations")
 
-    print("Loading weather data from Parquet...")
+    logger.info("Loading weather data from Parquet...")
     weather_df = pd.read_parquet(os.path.join(DATA_DIR, 'bomweatherdata.parquet'))
     weather_df['Date'] = pd.to_datetime(weather_df['Date'], format='%d/%m/%Y')
 
@@ -57,10 +61,10 @@ def init_database():
 
     session.bulk_insert_mappings(WeatherData, weather_records)
     session.commit()
-    print(f"Inserted {len(weather_records)} weather records")
+    logger.info(f"Inserted {len(weather_records)} weather records")
 
     session.close()
-    print("Database initialization complete!")
+    logger.info("Database initialization complete!")
 
 if __name__ == '__main__':
     init_database()

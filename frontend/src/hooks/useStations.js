@@ -24,13 +24,15 @@ export const useStates = () => {
   });
 };
 
-export const useHeatmapData = (metric = 'temperature') => {
+export const useHeatmapData = (metric = 'temperature', startDate = null, endDate = null) => {
   return useQuery({
-    queryKey: ['heatmap', metric],
+    queryKey: ['heatmap', metric, startDate, endDate],
     queryFn: async () => {
-      const response = await apiClient.get('/api/weather/heatmap', {
-        params: { metric },
-      });
+      const params = { metric };
+      if (startDate) params.start_date = startDate;
+      if (endDate) params.end_date = endDate;
+
+      const response = await apiClient.get('/api/weather/heatmap', { params });
       return response.data;
     },
     staleTime: 60000 * 5,

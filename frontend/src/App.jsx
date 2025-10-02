@@ -8,6 +8,8 @@ import TimeSeriesChart from './components/Charts/TimeSeriesChart';
 import DistributionCharts from './components/Charts/DistributionCharts';
 import StatisticsPanel from './components/Statistics/StatisticsPanel';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import ExportModal from './components/common/ExportModal';
+import ScreenSizeWarning from './components/common/ScreenSizeWarning';
 import { toast } from './utils/toast';
 
 const queryClient = new QueryClient({
@@ -29,6 +31,8 @@ function DashboardContent({ isSidebarCollapsed }) {
   const { isDark, toggleTheme } = useTheme();
   const [chartView, setChartView] = useState('timeseries');
   const [isResizing, setIsResizing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportType, setExportType] = useState('');
 
   // Handle sidebar collapse animation
   useEffect(() => {
@@ -39,16 +43,20 @@ function DashboardContent({ isSidebarCollapsed }) {
     return () => clearTimeout(timer);
   }, [isSidebarCollapsed]);
 
-  const handleExportCSV = async () => {
+  const handleExportCSV = () => {
+    setIsExporting(true);
+    setExportType('csv');
+  };
+
+  const handleExportConfirm = async (selectedMetrics) => {
     const params = new URLSearchParams();
     if (filters.state) params.append('state', filters.state);
     if (filters.startDate) params.append('start_date', filters.startDate);
     if (filters.endDate) params.append('end_date', filters.endDate);
     if (filters.selectedStation) params.append('station_ids', filters.selectedStation);
-    if (filters.selectedMetric) params.append('metrics', filters.selectedMetric);
+    if (selectedMetrics.length > 0) params.append('metrics', selectedMetrics.join(','));
 
     try {
-      toast.info('Exporting data...');
       const response = await fetch(`/api/weather/export?${params}`);
       if (!response.ok) throw new Error('Export failed');
 
@@ -62,15 +70,23 @@ function DashboardContent({ isSidebarCollapsed }) {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast.success('Data exported successfully!');
+      setIsExporting(false);
+      setExportType('');
     } catch (error) {
-      console.error('Export failed:', error);
       toast.error('Failed to export data. Please try again.');
+      setIsExporting(false);
+      setExportType('');
     }
   };
 
+  const handleExportCancel = () => {
+    setIsExporting(false);
+    setExportType('');
+  };
+
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-6 overflow-auto bg-background dark:bg-custom-bg">
-      <div className="mb-4 flex justify-between items-center">
+    <div className="flex-1 flex flex-col p-4 md:p-6 pb-0 overflow-auto bg-background dark:bg-custom-bg">
+      <div className="mb-2 flex justify-between items-center">
         <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'ml-12 md:ml-16' : 'ml-0'}`}>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
             Meteorological Data Dashboard
@@ -104,8 +120,8 @@ function DashboardContent({ isSidebarCollapsed }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6" style={{ height: 'calc(100vh - 200px)' }}>
-        <div className="lg:col-span-2 min-w-0 bg-white dark:bg-custom-card rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow h-full border border-gray-300 dark:border-gray-600 relative">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 mb-4 min-h-[600px] auto-rows-auto">
+        <div className="lg:col-span-2 min-w-0 bg-white dark:bg-custom-card rounded-lg shadow-lg p-4 hover:shadow-2xl transition-all duration-300 h-full border border-gray-300 dark:border-gray-600 relative animate-fade-in">
           {isResizing && (
             <div className="absolute inset-0 bg-white/80 dark:bg-custom-card/80 backdrop-blur-sm z-50 flex items-start justify-center pt-2 rounded-lg">
               <div className="w-full max-w-xs h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -118,7 +134,7 @@ function DashboardContent({ isSidebarCollapsed }) {
           </ErrorBoundary>
         </div>
 
-        <div className="lg:col-span-1 min-w-0 bg-white dark:bg-custom-card rounded-lg shadow-lg hover:shadow-xl transition-shadow h-full flex flex-col border border-gray-300 dark:border-gray-600 relative">
+        <div className="lg:col-span-1 min-w-0 bg-white dark:bg-custom-card rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 h-full flex flex-col border border-gray-300 dark:border-gray-600 relative animate-fade-in" style={{ animationDelay: '0.1s' }}>
           {isResizing && (
             <div className="absolute inset-0 bg-white/80 dark:bg-custom-card/80 backdrop-blur-sm z-50 flex items-start justify-center pt-2 rounded-lg">
               <div className="w-full max-w-xs h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -148,7 +164,7 @@ function DashboardContent({ isSidebarCollapsed }) {
               Distribution
             </button>
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <ErrorBoundary>
               {chartView === 'timeseries' ? <TimeSeriesChart /> : <DistributionCharts />}
             </ErrorBoundary>
@@ -156,14 +172,14 @@ function DashboardContent({ isSidebarCollapsed }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-4 md:mt-6 mb-6">
-        <div className="lg:col-span-2 max-h-96 overflow-y-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 mt-0">
+        <div className="lg:col-span-2 h-[280px] overflow-y-auto bg-white dark:bg-custom-card rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 p-6 hover:shadow-2xl transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <ErrorBoundary>
             <StatisticsPanel />
           </ErrorBoundary>
         </div>
 
-        <div className="bg-white dark:bg-custom-card rounded-lg shadow-lg p-4 md:p-6 hover:shadow-xl transition-shadow border border-gray-300 dark:border-gray-600">
+        <div className="bg-white dark:bg-custom-card rounded-lg shadow-lg p-4 hover:shadow-2xl transition-all duration-300 border border-gray-300 dark:border-gray-600 h-[280px] animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">About</h4>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
             FIT3164 Team 22 - Interactive Spatial Data Visualization
@@ -175,6 +191,16 @@ function DashboardContent({ isSidebarCollapsed }) {
           </div>
         </div>
       </div>
+
+      <ExportModal
+        isOpen={isExporting}
+        exportType={exportType}
+        onCancel={handleExportCancel}
+        onConfirm={handleExportConfirm}
+        startDate={filters.startDate}
+        endDate={filters.endDate}
+        currentMetric={filters.selectedMetric}
+      />
     </div>
   );
 }
@@ -186,18 +212,19 @@ function App() {
     return (
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <FilterProvider>
-            <div className="flex h-screen bg-background dark:bg-discord-darkest overflow-hidden">
-              <FilterSidebar onCollapseChange={setIsSidebarCollapsed} />
-              <DashboardContent isSidebarCollapsed={isSidebarCollapsed} />
-            </div>
-          </FilterProvider>
+          <ScreenSizeWarning>
+            <FilterProvider>
+              <div className="flex h-screen bg-background dark:bg-discord-darkest overflow-hidden">
+                <FilterSidebar onCollapseChange={setIsSidebarCollapsed} />
+                <DashboardContent isSidebarCollapsed={isSidebarCollapsed} />
+              </div>
+            </FilterProvider>
+          </ScreenSizeWarning>
         </ThemeProvider>
       </QueryClientProvider>
     );
   } catch (error) {
-    console.error('App render error:', error);
-    return <div style={{padding: '20px', color: 'red'}}>Error: {error.message}</div>;
+    return <div style={{padding: '20px', color: 'red'}}>Application Error: {error.message}</div>;
   }
 }
 

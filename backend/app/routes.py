@@ -23,31 +23,35 @@ def get_states():
 @api_bp.route('/stations')
 def get_stations():
     try:
-        state = request.args.get('state')
+        state = validate_state(request.args.get('state')) if request.args.get('state') else None
         stations = station_service.get_all_stations(state=state)
         return jsonify(stations)
+    except ValueError as e:
+        return handle_validation_error(e)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/stations/<int:station_id>')
 def get_station(station_id):
     try:
+        if station_id <= 0:
+            raise ValueError("Station ID must be a positive integer")
         station = station_service.get_station_by_id(station_id)
         if station:
             return jsonify(station)
         return jsonify({"error": "Station not found"}), 404
+    except ValueError as e:
+        return handle_validation_error(e)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/weather')
 def get_weather():
     try:
-        station_ids_str = request.args.get('station_ids')
-        station_ids = [int(x) for x in station_ids_str.split(',')] if station_ids_str else None
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        metrics = request.args.get('metrics')
-        metrics = metrics.split(',') if metrics else None
+        station_ids = validate_station_ids(request.args.get('station_ids'))
+        start_date = validate_date(request.args.get('start_date'), 'start_date')
+        end_date = validate_date(request.args.get('end_date'), 'end_date')
+        metrics = validate_metrics(request.args.get('metrics'))
 
         data = weather_service.get_weather_data(
             station_ids=station_ids,
@@ -56,6 +60,8 @@ def get_weather():
             metrics=metrics
         )
         return jsonify(data)
+    except ValueError as e:
+        return handle_validation_error(e)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -63,20 +69,31 @@ def get_weather():
 def get_heatmap_data():
     try:
         metric = request.args.get('metric', 'temperature')
-        data = weather_service.get_station_latest_values(metric=metric)
+        if metric not in ['temperature', 'rainfall', 'humidity', 'wind', 'evapotranspiration']:
+            raise ValueError(f"Invalid metric: {metric}")
+        start_date = validate_date(request.args.get('start_date'), 'start_date')
+        end_date = validate_date(request.args.get('end_date'), 'end_date')
+        data = weather_service.get_station_latest_values(
+            metric=metric,
+            start_date=start_date,
+            end_date=end_date
+        )
         return jsonify(data)
+    except ValueError as e:
+        return handle_validation_error(e)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @api_bp.route('/weather/aggregate')
 def get_aggregate():
     try:
-        station_ids_str = request.args.get('station_ids')
-        station_ids = [int(x) for x in station_ids_str.split(',')] if station_ids_str else None
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
+        station_ids = validate_station_ids(request.args.get('station_ids'))
+        start_date = validate_date(request.args.get('start_date'), 'start_date')
+        end_date = validate_date(request.args.get('end_date'), 'end_date')
         metric = request.args.get('metric', 'temperature')
-        aggregation = request.args.get('aggregation', 'monthly')
+        if metric not in ['temperature', 'rainfall', 'humidity', 'wind', 'evapotranspiration']:
+            raise ValueError(f"Invalid metric: {metric}")
+        aggregation = validate_aggregation(request.args.get('aggregation', 'monthly'))
 
         data = aggregation_service.get_aggregated_data(
             station_ids=station_ids,
@@ -86,6 +103,8 @@ def get_aggregate():
             aggregation=aggregation
         )
         return jsonify(data)
+    except ValueError as e:
+        return handle_validation_error(e)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

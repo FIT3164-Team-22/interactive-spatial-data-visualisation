@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { useFilters } from '../../context/FilterContext';
-import SkeletonLoader from '../common/SkeletonLoader';
 
 const fetchStatistics = async (filters) => {
   const params = new URLSearchParams();
@@ -26,25 +25,40 @@ export default function StatisticsPanel() {
 
   if (!filters.state && !filters.selectedStation) {
     return (
-      <div className="bg-white dark:bg-custom-card rounded-lg shadow-md p-6 border border-gray-300 dark:border-gray-600">
-        <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">Statistical Analysis</h2>
-        <p className="text-gray-500 dark:text-gray-400">Select a state or station to view statistics</p>
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">📍</div>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
+            No station or state selected
+          </p>
+          <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
+            Click on a station marker or choose a state from the dropdown menu to view its stats
+          </p>
+        </div>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-custom-card rounded-lg shadow-md p-6 border border-gray-300 dark:border-gray-600">
+      <div>
         <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">Statistical Analysis</h2>
-        <SkeletonLoader type="stats" />
+        <div className="flex items-center justify-center py-8">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Loading statistics...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || stats?.error) {
     return (
-      <div className="bg-white dark:bg-custom-card rounded-lg shadow-md p-6 border border-gray-300 dark:border-gray-600">
+      <div>
         <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">Statistical Analysis</h2>
         <p className="text-red-500 dark:text-red-400">{error?.message || stats?.error || 'Failed to load statistics'}</p>
       </div>
@@ -65,7 +79,7 @@ export default function StatisticsPanel() {
   };
 
   return (
-    <div className="bg-white dark:bg-custom-card rounded-lg shadow-md p-6 border border-gray-300 dark:border-gray-600">
+    <div>
       <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">Statistical Analysis</h2>
 
       <div className="mb-6 bg-primary/10 dark:bg-primary/20 p-4 rounded-lg border-l-4 border-primary">

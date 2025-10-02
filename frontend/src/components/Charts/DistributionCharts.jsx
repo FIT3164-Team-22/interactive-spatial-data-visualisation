@@ -5,7 +5,6 @@ import { useWeatherData } from '../../hooks/useWeatherData';
 import { useTheme } from '../../context/ThemeContext';
 import { metricConfig } from '../../constants/metrics';
 import EmptyState from '../common/EmptyState';
-import SkeletonLoader from '../common/SkeletonLoader';
 import { toast } from '../../utils/toast';
 
 export default function DistributionCharts() {
@@ -20,6 +19,15 @@ export default function DistributionCharts() {
     endDate,
     [selectedMetric]
   );
+
+  // Calculate these values early, before any conditional returns
+  const config = metricConfig[selectedMetric] || metricConfig.temperature;
+  const stationName = weatherData?.[0]?.station_name || 'Station';
+  const values = useMemo(() =>
+    weatherData
+      ?.filter(d => d[config.key] !== null)
+      .map(d => d[config.key]) || []
+  , [weatherData, config.key]);
 
   const handleExportPNG = async () => {
     if (!chartRef.current || isExporting) return;
@@ -40,7 +48,6 @@ export default function DistributionCharts() {
       link.click();
       toast.success('Distribution chart exported successfully!');
     } catch (error) {
-      console.error('Failed to export chart:', error);
       toast.error('Failed to export chart. Please try again.');
     } finally {
       setIsExporting(false);
@@ -52,25 +59,26 @@ export default function DistributionCharts() {
   }
 
   if (isLoading) {
-    return <SkeletonLoader type="chart" />;
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-white dark:bg-custom-card">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-12 h-12">
+            <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Loading chart...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return <EmptyState title="Error loading data" message={error.message} icon="⚠️" />;
   }
 
-  const config = metricConfig[selectedMetric] || metricConfig.temperature;
-  const values = useMemo(() =>
-    weatherData
-      ?.filter(d => d[config.key] !== null)
-      .map(d => d[config.key]) || []
-  , [weatherData, config.key]);
-
   if (values.length === 0) {
     return <EmptyState title="No data available" message="Try adjusting your filters" icon="📊" />;
   }
-
-  const stationName = weatherData?.[0]?.station_name || 'Station';
 
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -106,8 +114,8 @@ export default function DistributionCharts() {
   ];
 
   return (
-    <div className="h-full w-full p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+    <div className="h-full w-full p-4 flex flex-col overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 flex-shrink-0">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{stationName} - Distribution</h3>
         <button
           onClick={handleExportPNG}
@@ -118,10 +126,10 @@ export default function DistributionCharts() {
         </button>
       </div>
 
-      <div ref={chartRef} className="space-y-6">
+      <div ref={chartRef} className="flex-1 min-h-0 overflow-y-auto space-y-4">
         <div>
           <h4 className="text-md font-medium text-gray-700 dark:text-gray-200 mb-2">Histogram</h4>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={180}>
             <BarChart data={histogram}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#4B5563' : '#E5E7EB'} />
               <XAxis
