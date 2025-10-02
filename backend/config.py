@@ -1,24 +1,21 @@
 import os
 
 class Config:
-    """Base configuration."""
     SECRET_KEY = os.getenv('SECRET_KEY', 'a-super-secret-key-that-you-should-change')
-    # Add other base configurations here
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DATABASE_URL = os.getenv('DATABASE_URL', f'sqlite:///{os.path.join(BASE_DIR, "bom_data.db")}')
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_DEFAULT_TIMEOUT = 300
 
 class DevelopmentConfig(Config):
-    """Development configuration."""
     DEBUG = True
-    # Allow all origins for easy local development
     CORS_ORIGINS = "*"
 
 class ProductionConfig(Config):
-    """Production configuration."""
     DEBUG = False
-    # In production, we MUST restrict this to our frontend's actual domain
-    # Example: CORS_ORIGINS = ["https://your-frontend-domain.com"]
-    CORS_ORIGINS = os.getenv('CORS_ORIGINS', '').split(',')
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*').split(',') if os.getenv('CORS_ORIGINS') else '*'
+    CACHE_DEFAULT_TIMEOUT = 600
 
-# Dictionary to map environment names to config classes
 config_by_name = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
