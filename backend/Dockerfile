@@ -15,10 +15,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
 
-RUN adduser --disabled-password --gecos "" appuser
+RUN mkdir -p /app/data && chmod 755 /app/data
+
+RUN adduser --disabled-password --gecos "" appuser && \
+    chown -R appuser:appuser /app
+
 USER appuser
 
 ENV FLASK_CONFIG=production \
-    PORT=8000
+    PORT=8000 \
+    DATABASE_URL=sqlite:////app/data/bom_data.db
 
-CMD ["gunicorn", "wsgi:app", "-c", "gunicorn.conf.py"]
+EXPOSE 8000
+
+CMD ["sh", "-c", "python init_db.py && gunicorn wsgi:app -c gunicorn.conf.py"]

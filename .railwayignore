@@ -1,0 +1,35 @@
+# Frontend
+frontend/
+
+# Documentation
+docs/
+*.md
+!backend/README.md
+
+# Development files
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# Testing
+backend/tests/
+backend/pytest.ini
+backend/.pytest_cache/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Docker (we're using Railway's build)
+docker-compose.yml
+frontend/.dockerignore
+
+# Environment examples
+.env.example
+backend/.env.example
+frontend/.env.example
+
+# CI/CD
+.github/
