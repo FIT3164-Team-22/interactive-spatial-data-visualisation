@@ -1,141 +1,133 @@
-import { useRef, useMemo, useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useFilters } from '../../context/FilterContext';
-import { useAggregatedData } from '../../hooks/useWeatherData';
-import { useTheme } from '../../context/ThemeContext';
-import { format, parseISO } from 'date-fns';
-import { metricConfig } from '../../constants/metrics';
-import EmptyState from '../common/EmptyState';
-import { toast } from '../../utils/toast';
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useFilters } from '../../context/FilterContext'
+import { useAggregatedData } from '../../hooks/useWeatherData'
+import { useTheme } from '../../context/ThemeContext'
+import { format, parseISO } from 'date-fns'
+import { metricConfig } from '../../constants/metrics'
+import EmptyState from '../common/EmptyState'
+import { toast } from '../../utils/toast'
 
 export default function TimeSeriesChart() {
-  const { selectedStationId, startDate, endDate, selectedMetric, aggregation, setAggregation } = useFilters();
-  const { isDark } = useTheme();
-  const chartRef = useRef(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const { selectedStationId, startDate, endDate, selectedMetric, aggregation, setAggregation } = useFilters()
+  const { isDark } = useTheme()
+  const chartRef = useRef(null)
+  const [isExporting, setIsExporting] = useState(false)
 
-  // Calculate date range in days
   const daysDifference = useMemo(() => {
-    if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-  }, [startDate, endDate]);
+    if (!startDate || !endDate) return 0
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    return Math.max(0, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
+  }, [startDate, endDate])
 
-  // Determine available aggregation options based on date range
   const availableAggregations = useMemo(() => {
-    const options = [];
-    options.push({ value: 'daily', label: 'Daily' });
-
+    const options = [{ value: 'daily', label: 'Daily' }]
     if (daysDifference >= 7) {
-      options.push({ value: 'weekly', label: 'Weekly' });
+      options.push({ value: 'weekly', label: 'Weekly' })
     }
-
     if (daysDifference >= 30) {
-      options.push({ value: 'monthly', label: 'Monthly' });
+      options.push({ value: 'monthly', label: 'Monthly' })
     }
+    if (daysDifference >= 365) {
+      options.push({ value: 'yearly', label: 'Yearly' })
+    }
+    return options
+  }, [daysDifference])
 
-    return options;
-  }, [daysDifference]);
-
-  // Reset aggregation if it's no longer available
   useEffect(() => {
-    const isAvailable = availableAggregations.some(opt => opt.value === aggregation);
+    const isAvailable = availableAggregations.some((option) => option.value === aggregation)
     if (!isAvailable && availableAggregations.length > 0) {
-      setAggregation(availableAggregations[0].value);
+      setAggregation(availableAggregations[0].value)
     }
-  }, [availableAggregations, aggregation]);
+  }, [availableAggregations, aggregation, setAggregation])
 
   const { data: weatherData, isLoading, error } = useAggregatedData(
     selectedStationId ? [selectedStationId] : null,
     startDate,
     endDate,
     selectedMetric,
-    aggregation
-  );
+    aggregation,
+  )
 
-  // Calculate these values early, before any conditional returns
-  const config = metricConfig[selectedMetric] || metricConfig.temperature;
-  const stationName = weatherData?.[0]?.station_name || 'Station';
+  const config = metricConfig[selectedMetric] || metricConfig.temperature
+  const stationName = weatherData?.[0]?.station_name || 'Station'
 
   const chartData = useMemo(() => {
-    if (!weatherData) return [];
-
-    return weatherData.map(d => {
-      let formattedDate;
-
-      // Format date based on aggregation type
+    if (!weatherData) return []
+    return weatherData.map((entry) => {
+      let formattedDate = entry.period
       if (aggregation === 'weekly') {
-        // Format weekly data (e.g., "2024-W05" -> "Week 5, 2024")
-        const [year, week] = d.period.split('-W');
-        formattedDate = `Week ${week}, ${year}`;
+        const [year, week] = entry.period.split('-W')
+        formattedDate = `Week ${week}, ${year}`
       } else if (aggregation === 'monthly') {
-        // Format monthly data (e.g., "2024-01" -> "Jan 2024")
-        const [year, month] = d.period.split('-');
-        const date = new Date(year, month - 1);
-        formattedDate = format(date, 'MMM yyyy');
+        const [year, month] = entry.period.split('-')
+        const date = new Date(Number(year), Number(month) - 1)
+        formattedDate = format(date, 'MMM yyyy')
+      } else if (aggregation === 'yearly') {
+        formattedDate = entry.period
       } else {
-        // Daily format
-        formattedDate = format(parseISO(d.period), 'MMM dd, yyyy');
+        formattedDate = format(parseISO(entry.period), 'MMM dd, yyyy')
       }
-
       return {
         date: formattedDate,
-        value: d.avg_value,
-        station: d.station_name,
-      };
-    });
-  }, [weatherData, aggregation]);
+        value: entry.avg_value,
+        station: entry.station_name,
+      }
+    })
+  }, [weatherData, aggregation])
 
   const handleExportPNG = async () => {
-    if (!chartRef.current || isExporting) return;
+    if (!chartRef.current || isExporting) return
 
-    setIsExporting(true);
-    toast.info('Exporting chart...');
+    setIsExporting(true)
+    toast.info('Exporting chart...')
 
     try {
-      const html2canvas = (await import('html2canvas')).default;
+      const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(chartRef.current, {
         backgroundColor: isDark ? '#242429' : '#ffffff',
-        scale: 2
-      });
+        scale: 2,
+      })
 
-      const link = document.createElement('a');
-      link.download = `${stationName}_${selectedMetric}_chart.png`;
-      link.href = canvas.toDataURL();
-      link.click();
-      toast.success('Chart exported successfully!');
-    } catch (error) {
-      toast.error('Failed to export chart. Please try again.');
+      const link = document.createElement('a')
+      link.download = `${stationName}_${selectedMetric}_chart.png`
+      link.href = canvas.toDataURL()
+      link.click()
+      toast.success('Chart exported successfully')
+    } catch (exportError) {
+      const message = exportError?.message || 'Failed to export chart'
+      toast.error(message)
     } finally {
-      setIsExporting(false);
+      setIsExporting(false)
     }
-  };
+  }
 
   if (!selectedStationId) {
-    return <EmptyState title="No Station Selected" message="Click on a station marker to view its data" icon="📍" />;
+    return <EmptyState title="No station selected" message="Click on a station marker to view its data" />
   }
 
   if (isLoading) {
     return (
-      <div className="h-full w-full flex items-center justify-center bg-white dark:bg-custom-card">
+      <div className="h-full w-full flex items-center justify-center bg-white dark:bg-custom-card" role="status" aria-live="polite">
         <div className="flex flex-col items-center gap-4">
-          <div className="relative w-12 h-12">
+          <div className="relative w-12 h-12" aria-hidden="true">
             <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
             <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Loading chart...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (error) {
-    return <EmptyState title="Error loading data" message={error.message} icon="⚠️" />;
+    const message = error?.message || 'Unable to load data'
+    return <EmptyState title="Error loading data" message={message} />
   }
 
   if (chartData.length === 0) {
-    return <EmptyState title="No data available" message="Try adjusting your filters" icon="📊" />;
+    return <EmptyState title="No data available" message="Try adjusting your filters" />
   }
 
   return (
@@ -147,70 +139,69 @@ export default function TimeSeriesChart() {
             onClick={handleExportPNG}
             disabled={isExporting}
             className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            type="button"
           >
             {isExporting ? 'Exporting...' : 'Export PNG'}
           </button>
         </div>
 
-        {/* Aggregation selector */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Time Period:
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="aggregation-select">
+            Time period
           </label>
           <select
+            id="aggregation-select"
             value={aggregation}
-            onChange={(e) => setAggregation(e.target.value)}
+            onChange={(event) => setAggregation(event.target.value)}
             className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition bg-white dark:bg-custom-card text-gray-900 dark:text-gray-100"
           >
-            {availableAggregations.map(opt => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+            {availableAggregations.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            ({daysDifference} days selected)
-          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">({daysDifference} days selected)</span>
         </div>
       </div>
       <div ref={chartRef} className="flex-1 min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#4B5563' : '#E5E7EB'} />
-          <XAxis
-            dataKey="date"
-            tick={{ fontSize: 12, fill: isDark ? '#9CA3AF' : '#6B7280' }}
-            angle={-45}
-            textAnchor="end"
-            height={80}
-            stroke={isDark ? '#6B7280' : '#D1D5DB'}
-          />
-          <YAxis
-            tick={{ fontSize: 12, fill: isDark ? '#9CA3AF' : '#6B7280' }}
-            label={{ value: config.label, angle: -90, position: 'insideLeft', fill: isDark ? '#9CA3AF' : '#6B7280' }}
-            stroke={isDark ? '#6B7280' : '#D1D5DB'}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
-              border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
-              borderRadius: '8px',
-              color: isDark ? '#F3F4F6' : '#1F2937',
-            }}
-          />
-          <Legend wrapperStyle={{ color: isDark ? '#9CA3AF' : '#6B7280' }} />
-          <Line
-            type="monotone"
-            dataKey="value"
-            stroke={config.color}
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 5 }}
-            name={config.label}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#4B5563' : '#E5E7EB'} />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 12, fill: isDark ? '#9CA3AF' : '#6B7280' }}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+              stroke={isDark ? '#6B7280' : '#D1D5DB'}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: isDark ? '#9CA3AF' : '#6B7280' }}
+              label={{ value: config.label, angle: -90, position: 'insideLeft', fill: isDark ? '#9CA3AF' : '#6B7280' }}
+              stroke={isDark ? '#6B7280' : '#D1D5DB'}
+            />
+            <RechartsTooltip
+              contentStyle={{
+                backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+                border: `1px solid ${isDark ? '#374151' : '#E5E7EB'}`,
+                borderRadius: '8px',
+                color: isDark ? '#F3F4F6' : '#1F2937',
+              }}
+            />
+            <Legend wrapperStyle={{ color: isDark ? '#9CA3AF' : '#6B7280' }} />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={config.color}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 5 }}
+              name={config.label}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
-  );
+  )
 }

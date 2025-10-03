@@ -1,120 +1,125 @@
+from __future__ import annotations
+
+from typing import Dict, Iterable, List, Optional, Sequence
+
+from sqlalchemy import Column
+
+from app.models import WeatherData
+from app.repositories import WeatherRepository
 from app.services.database_service import get_db_session
-from app.models import WeatherData, Station
-from sqlalchemy import func
-from datetime import datetime
+from app.utils.date_utils import parse_iso_date
+from app.utils.logging import get_logger
 
-def get_weather_data(station_ids=None, start_date=None, end_date=None, metrics=None):
+logger = get_logger(__name__)
+
+DEFAULT_PAGE_SIZE = 500
+MAX_PAGE_SIZE = 2000
+
+_metric_map: Dict[str, Column] = {
+    "temperature": WeatherData.temp_max_c,
+    "rainfall": WeatherData.rainfall_mm,
+    "humidity": WeatherData.humidity_max_percent,
+    "wind": WeatherData.wind_speed_ms,
+    "evapotranspiration": WeatherData.evapotranspiration_mm,
+}
+
+
+def get_weather_data(
+    *,
+    station_ids: Optional[Sequence[int]] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    metrics: Optional[Iterable[str]] = None,
+    page: int = 1,
+    page_size: int = DEFAULT_PAGE_SIZE,
+) -> Dict[str, object]:
+    start = parse_iso_date(start_date) if start_date else None
+    end = parse_iso_date(end_date) if end_date else None
+    bounded_page = max(page, 1)
+    bounded_page_size = min(max(page_size, 1), MAX_PAGE_SIZE)
+
     with get_db_session() as session:
-        query = session.query(WeatherData).join(Station)
+        repository = WeatherRepository(session)
+        records, total = repository.fetch_weather(
+            station_ids=station_ids,
+            start_date=start,
+            end_date=end,
+            page=bounded_page,
+            page_size=bounded_page_size,
+        )
 
-        if station_ids:
-            if isinstance(station_ids, int):
-                station_ids = [station_ids]
-            query = query.filter(WeatherData.station_id.in_(station_ids))
+        logger.debug(
+            "Fetched weather page",
+            extra={
+                "total": total,
+                "page": bounded_page,
+                "page_size": bounded_page_size,
+            },
+        )
 
-        if start_date:
-            if isinstance(start_date, str):
-                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            query = query.filter(WeatherData.date >= start_date)
-
-        if end_date:
-            if isinstance(end_date, str):
-                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            query = query.filter(WeatherData.date <= end_date)
-
-        weather_records = query.order_by(WeatherData.date).all()
-
-        results = []
-        for w in weather_records:
+        items: List[Dict[str, object]] = []
+        selected_metrics = set(metrics) if metrics else set()
+        for row in records:
             record = {
-                'station_id': w.station_id,
-                'station_name': w.station.station_name,
-                'state': w.station.state,
-                'date': w.date.isoformat(),
+                "station_id": row.station_id,
+                "station_name": row.station.station_name,
+                "state": row.station.state,
+                "date": row.date.isoformat(),
             }
+            if not selected_metrics or "evapotranspiration" in selected_metrics:
+                record["evapotranspiration_mm"] = row.evapotranspiration_mm
+            if not selected_metrics or "rainfall" in selected_metrics:
+                record["rainfall_mm"] = row.rainfall_mm
+            if not selected_metrics or "temperature" in selected_metrics:
+                record["temp_max_c"] = row.temp_max_c
+                record["temp_min_c"] = row.temp_min_c
+            if not selected_metrics or "humidity" in selected_metrics:
+                record["humidity_max_percent"] = row.humidity_max_percent
+                record["humidity_min_percent"] = row.humidity_min_percent
+            if not selected_metrics or "wind" in selected_metrics:
+                record["wind_speed_ms"] = row.wind_speed_ms
+            items.append(record)
 
-            if not metrics or 'evapotranspiration' in metrics:
-                record['evapotranspiration_mm'] = w.evapotranspiration_mm
-            if not metrics or 'rainfall' in metrics:
-                record['rainfall_mm'] = w.rainfall_mm
-            if not metrics or 'temperature' in metrics:
-                record['temp_max_c'] = w.temp_max_c
-                record['temp_min_c'] = w.temp_min_c
-            if not metrics or 'humidity' in metrics:
-                record['humidity_max_percent'] = w.humidity_max_percent
-                record['humidity_min_percent'] = w.humidity_min_percent
-            if not metrics or 'wind' in metrics:
-                record['wind_speed_ms'] = w.wind_speed_ms
+        total_pages = (total + bounded_page_size - 1) // bounded_page_size if bounded_page_size else 1
+        return {
+            "items": items,
+            "pagination": {
+                "page": bounded_page,
+                "page_size": bounded_page_size,
+                "total_items": total,
+                "total_pages": total_pages,
+            },
+        }
 
-            results.append(record)
 
-        return results
-
-def get_station_latest_values(metric='temp_max_c', start_date=None, end_date=None):
-    metric_map = {
-        'temperature': WeatherData.temp_max_c,
-        'rainfall': WeatherData.rainfall_mm,
-        'humidity': WeatherData.humidity_max_percent,
-        'wind': WeatherData.wind_speed_ms,
-        'evapotranspiration': WeatherData.evapotranspiration_mm
-    }
-
-    metric_column = metric_map.get(metric, WeatherData.temp_max_c)
+def get_station_latest_values(
+    *,
+    metric: str = "temperature",
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> List[Dict[str, object]]:
+    metric_column = _metric_map.get(metric, WeatherData.temp_max_c)
+    start = parse_iso_date(start_date)
+    end = parse_iso_date(end_date)
 
     with get_db_session() as session:
-        # If date range provided, calculate average for the period
-        if start_date or end_date:
-            query = session.query(
-                Station.id,
-                Station.station_name,
-                Station.latitude,
-                Station.longitude,
-                Station.state,
-                func.avg(metric_column).label('value')
-            ).join(
-                WeatherData, Station.id == WeatherData.station_id
-            )
+        repository = WeatherRepository(session)
+        rows = repository.fetch_latest_metric_values(
+            column=metric_column,
+            start_date=start,
+            end_date=end,
+        )
 
-            if start_date:
-                if isinstance(start_date, str):
-                    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-                query = query.filter(WeatherData.date >= start_date)
+    logger.debug("Fetched heatmap dataset", extra={"metric": metric, "count": len(rows)})
 
-            if end_date:
-                if isinstance(end_date, str):
-                    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-                query = query.filter(WeatherData.date <= end_date)
-
-            query = query.group_by(Station.id)
-        else:
-            # Use latest values if no date range provided
-            subquery = session.query(
-                WeatherData.station_id,
-                func.max(WeatherData.date).label('max_date')
-            ).group_by(WeatherData.station_id).subquery()
-
-            query = session.query(
-                Station.id,
-                Station.station_name,
-                Station.latitude,
-                Station.longitude,
-                Station.state,
-                metric_column.label('value')
-            ).join(
-                WeatherData, Station.id == WeatherData.station_id
-            ).join(
-                subquery,
-                (WeatherData.station_id == subquery.c.station_id) &
-                (WeatherData.date == subquery.c.max_date)
-            )
-
-        results = query.all()
-
-        return [{
-            'station_id': r.id,
-            'station_name': r.station_name,
-            'latitude': r.latitude,
-            'longitude': r.longitude,
-            'state': r.state,
-            'value': round(r.value, 2) if r.value else None
-        } for r in results]
+    return [
+        {
+            "station_id": station_id,
+            "station_name": station_name,
+            "latitude": latitude,
+            "longitude": longitude,
+            "state": state,
+            "value": round(value, 2) if value is not None else None,
+        }
+        for station_id, station_name, latitude, longitude, state, value in rows
+    ]

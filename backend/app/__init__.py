@@ -1,88 +1,132 @@
-import os
+from __future__ import annotations
+
 import logging
+import os
+
 from flask import Flask, jsonify
-from flask_cors import CORS
 from flask_caching import Cache
+from flask_compress import Compress
+from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
+from flasgger import Swagger
+from sqlalchemy import text
+
 from config import config_by_name
+from .docs.swagger import swagger_config, swagger_template
+from .services.database_service import get_db_session
 
 cache = Cache()
+compress = Compress()
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per hour", "50 per minute"],
-    storage_uri="memory://"
+    storage_uri="memory://",
 )
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-def create_app(config_name='development'):
+
+def create_app(config_name: str = "development") -> Flask:
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
+    app.config.setdefault("MAX_CONTENT_LENGTH", 2 * 1024 * 1024)  # 2 MB request cap
 
-    cors_origins = app.config.get('CORS_ORIGINS', '*')
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": cors_origins,
-            "methods": ["GET", "POST", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "expose_headers": ["Content-Disposition"],
-            "max_age": 3600
-        }
-    })
+    if config_name == "production":
+        if not app.config.get("CORS_ORIGINS"):
+            raise RuntimeError("CORS_ORIGINS must be configured in production")
+        if not os.getenv("SECRET_KEY"):
+            raise RuntimeError("SECRET_KEY must be configured in production")
 
-    if config_name == 'production':
-        Talisman(app,
+    cors_origins = app.config.get("CORS_ORIGINS", "*")
+    CORS(
+        app,
+        resources={
+            r"/api/*": {
+                "origins": cors_origins,
+                "methods": ["GET", "POST", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization"],
+                "expose_headers": ["Content-Disposition"],
+                "max_age": 3600,
+            }
+        },
+    )
+
+    if config_name == "production":
+        Talisman(
+            app,
             force_https=True,
             strict_transport_security=True,
             content_security_policy={
-                'default-src': "'self'",
-                'script-src': "'self' 'unsafe-inline'",
-                'style-src': "'self' 'unsafe-inline'",
-                'img-src': "'self' data: https:",
+                "default-src": "'self'",
+                "script-src": "'self' 'unsafe-inline'",
+                "style-src": "'self' 'unsafe-inline'",
+                "img-src": "'self' data: https:",
+            },
+        )
+
+    cache.init_app(
+        app,
+        config={
+            "CACHE_TYPE": app.config.get("CACHE_TYPE", "SimpleCache"),
+            "CACHE_DEFAULT_TIMEOUT": app.config.get("CACHE_DEFAULT_TIMEOUT", 300),
+        },
+    )
+
+    compress.init_app(app)
+    limiter.init_app(app)
+    Swagger(app, config=swagger_config, template=swagger_template)
+
+    from .routes import api_bp
+
+    app.register_blueprint(api_bp, url_prefix="/api/v1")
+
+    @app.route("/")
+    def index():
+        return jsonify(
+            {
+                "message": "BOM Weather Visualization API",
+                "version": "1.0.0",
+                "status": "running",
             }
         )
 
-    cache.init_app(app, config={
-        'CACHE_TYPE': app.config.get('CACHE_TYPE', 'SimpleCache'),
-        'CACHE_DEFAULT_TIMEOUT': app.config.get('CACHE_DEFAULT_TIMEOUT', 300)
-    })
-
-    limiter.init_app(app)
-
-    from .routes import api_bp
-    app.register_blueprint(api_bp, url_prefix='/api')
-
-    @app.route('/')
-    def index():
-        return jsonify({
-            'message': 'BOM Weather Visualization API',
-            'version': '1.0.0',
-            'status': 'running'
-        })
-
-    @app.route('/health')
+    @app.route("/health")
     def health():
-        return jsonify({'status': 'healthy'}), 200
+        try:
+            with get_db_session() as session:
+                session.execute(text("SELECT 1"))
+            return jsonify({"status": "healthy", "database": "reachable"}), 200
+        except Exception:  # pragma: no cover - safety net
+            app.logger.exception("Health check failed")
+            return (
+                jsonify({"status": "unhealthy", "database": "unreachable"}),
+                500,
+            )
 
     @app.errorhandler(404)
     def not_found(error):
-        return jsonify({'error': 'Endpoint not found'}), 404
+        return jsonify({"error": "Endpoint not found"}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
-        app.logger.error(f'Internal error: {error}')
-        return jsonify({'error': 'Internal server error'}), 500
+        app.logger.error("Internal error", exc_info=error)
+        return jsonify({"error": "Internal server error"}), 500
 
     @app.errorhandler(429)
-    def ratelimit_handler(e):
-        return jsonify({
-            'error': 'Rate limit exceeded',
-            'message': 'Too many requests. Please try again later.'
-        }), 429
+    def ratelimit_handler(error):
+        return (
+            jsonify(
+                {
+                    "error": "Rate limit exceeded",
+                    "message": "Too many requests. Please try again later.",
+                }
+            ),
+            429,
+        )
 
     return app

@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env.example
+    environment:
+      FLASK_CONFIG: production
+      DATABASE_URL: sqlite:////data/bom_data.db
+      GUNICORN_WORKERS: 4
+    volumes:
+      - backend-data:/data
+    ports:
+      - "5000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      VITE_API_URL: http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  backend-data:

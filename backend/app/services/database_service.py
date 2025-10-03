@@ -1,17 +1,28 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
-from contextlib import contextmanager
+from __future__ import annotations
+
 import os
+from contextlib import contextmanager
+from typing import Generator
 
-DB_PATH = os.getenv('DATABASE_URL', 'sqlite:///bom_data.db')
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
-engine = create_engine(DB_PATH, pool_pre_ping=True, pool_recycle=3600)
-session_factory = sessionmaker(bind=engine)
-Session = scoped_session(session_factory)
+DB_PATH = os.getenv("DATABASE_URL", "sqlite:///bom_data.db")
+
+engine = create_engine(
+    DB_PATH,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    future=True,
+)
+SessionLocal = scoped_session(
+    sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+)
+
 
 @contextmanager
-def get_db_session():
-    session = Session()
+def get_db_session() -> Generator:
+    session = SessionLocal()
     try:
         yield session
         session.commit()
@@ -21,5 +32,9 @@ def get_db_session():
     finally:
         session.close()
 
+
 def get_session():
-    return Session()
+    return SessionLocal()
+
+
+__all__ = ["engine", "get_db_session", "get_session"]

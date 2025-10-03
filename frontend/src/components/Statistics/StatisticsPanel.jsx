@@ -1,159 +1,175 @@
-import { useQuery } from '@tanstack/react-query';
-import { useFilters } from '../../context/FilterContext';
+import { useQuery } from '@tanstack/react-query'
+import apiClient from '../../api/client'
+import { useFilters } from '../../context/FilterContext'
+import EmptyState from '../common/EmptyState'
 
 const fetchStatistics = async (filters) => {
-  const params = new URLSearchParams();
+  const params = {}
+  if (filters.state) params.state = filters.state
+  if (filters.startDate) params.start_date = filters.startDate
+  if (filters.endDate) params.end_date = filters.endDate
+  if (filters.selectedStation) params.station_ids = filters.selectedStation
 
-  if (filters.state) params.append('state', filters.state);
-  if (filters.startDate) params.append('start_date', filters.startDate);
-  if (filters.endDate) params.append('end_date', filters.endDate);
-  if (filters.selectedStation) params.append('station_ids', filters.selectedStation);
+  const response = await apiClient.get('statistics', { params })
+  return response.data
+}
 
-  const response = await fetch(`/api/statistics?${params}`);
-  if (!response.ok) throw new Error('Failed to fetch statistics');
-  return response.json();
-};
+const correlationDescription = (correlation) => {
+  if (correlation > 0.7) return 'Strong positive relationship'
+  if (correlation > 0.4) return 'Moderate positive relationship'
+  if (correlation > 0.0) return 'Weak positive relationship'
+  if (correlation > -0.4) return 'Weak negative relationship'
+  if (correlation > -0.7) return 'Moderate negative relationship'
+  return 'Strong negative relationship'
+}
 
 export default function StatisticsPanel() {
-  const { filters } = useFilters();
+  const { filters } = useFilters()
 
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ['statistics', filters],
     queryFn: () => fetchStatistics(filters),
-    enabled: !!(filters.state || filters.selectedStation)
-  });
+    enabled: Boolean(filters.state || filters.selectedStation),
+  })
 
   if (!filters.state && !filters.selectedStation) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">📍</div>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
-            No station or state selected
-          </p>
-          <p className="text-gray-500 dark:text-gray-500 text-sm mt-2">
-            Click on a station marker or choose a state from the dropdown menu to view its stats
-          </p>
-        </div>
-      </div>
-    );
+      <EmptyState
+        title="No region or station selected"
+        message="Select a station marker or choose a state to view statistical analysis."
+      />
+    )
   }
 
   if (isLoading) {
     return (
-      <div>
-        <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">Statistical Analysis</h2>
-        <div className="flex items-center justify-center py-8">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative w-12 h-12">
-              <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Loading statistics...</p>
+      <div className="flex items-center justify-center h-full" role="status" aria-live="polite">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-12 h-12" aria-hidden="true">
+            <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Loading statistics...</p>
         </div>
       </div>
-    );
+    )
   }
 
   if (error || stats?.error) {
-    return (
-      <div>
-        <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">Statistical Analysis</h2>
-        <p className="text-red-500 dark:text-red-400">{error?.message || stats?.error || 'Failed to load statistics'}</p>
-      </div>
-    );
+    const message = error?.message || stats?.error || 'Failed to load statistics'
+    return <EmptyState title="Unable to load statistics" message={message} />
   }
 
-  const getDominantFactorExplanation = () => {
-    const factor = stats.dominant_factor;
-    const explanations = {
-      'Maximum Temperature': 'Temperature shows the highest variability, indicating significant daily fluctuations in heat conditions across the selected period.',
-      'Minimum Temperature': 'Minimum temperature varies most, suggesting substantial differences in nighttime cooling patterns.',
-      'Rainfall': 'Rainfall displays the greatest variation, reflecting irregular precipitation patterns and potential drought or flood periods.',
-      'Maximum Humidity': 'Humidity levels fluctuate most significantly, indicating changing moisture conditions in the atmosphere.',
-      'Wind Speed': 'Wind speed shows the highest variance, suggesting variable atmospheric circulation patterns.',
-      'Evapotranspiration': 'Evapotranspiration varies most, indicating changing water loss rates from vegetation and soil.'
-    };
-    return explanations[factor] || 'This metric shows the most variation in the dataset.';
-  };
+  const dominantFactor = stats?.dominant_factor || 'Not available'
+
+  const explanations = {
+    'Maximum Temperature': 'Temperature variability is highest across the selected filters.',
+    'Minimum Temperature': 'Minimum temperature fluctuates the most across the selected filters.',
+    'Rainfall': 'Rainfall shows the greatest variation, indicating irregular precipitation.',
+    'Maximum Humidity': 'Humidity levels vary significantly within the selected timeframe.',
+    'Minimum Humidity': 'Minimum humidity values fluctuate strongly in the dataset.',
+    'Wind Speed': 'Wind speed presents the highest variance across the selection.',
+    'Evapotranspiration': 'Evapotranspiration variability dominates the selected dataset.',
+  }
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4 dark:text-gray-100">Statistical Analysis</h2>
+    <div className="space-y-6">
+      <header>
+        <h2 className="text-xl font-semibold mb-2 dark:text-gray-100">Statistical Analysis</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Overview of statistical trends for the selected filters.
+        </p>
+      </header>
 
-      <div className="mb-6 bg-primary/10 dark:bg-primary/20 p-4 rounded-lg border-l-4 border-primary">
+      <section
+        className="bg-primary/10 dark:bg-primary/20 p-4 rounded-lg border-l-4 border-primary"
+        aria-label="Summary statistics"
+      >
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sample Size:</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Sample size</span>
           <span className="text-sm text-gray-900 dark:text-gray-100 font-semibold">{stats.sample_size?.toLocaleString()} records</span>
         </div>
         <div className="mb-3">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Dominant Weather Factor:</span>
-          <div className="text-lg font-bold text-primary mt-1">{stats.dominant_factor}</div>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Dominant weather factor</span>
+          <div className="text-lg font-bold text-primary mt-1">{dominantFactor}</div>
         </div>
         <p className="text-xs text-gray-600 dark:text-gray-400 italic mt-2">
-          {getDominantFactorExplanation()}
+          {explanations[dominantFactor] || 'This metric exhibits the largest variation within the selected dataset.'}
         </p>
-      </div>
+      </section>
 
-      <div className="mb-6">
-        <h3 className="text-md font-semibold mb-3 dark:text-gray-200">Metric Statistics</h3>
+      <section aria-label="Metric statistics">
+        <h3 className="text-md font-semibold mb-3 dark:text-gray-200">Metric statistics</h3>
         <div className="space-y-3">
-          {stats.statistics && Object.entries(stats.statistics).map(([metric, values]) => (
-            <div key={metric} className="border-l-4 border-primary pl-3 py-1">
-              <div className="font-medium text-sm text-gray-700 dark:text-gray-300 capitalize mb-1">
-                {metric.replace(/_/g, ' ')}
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
-                <div>Mean: <span className="font-semibold">{values.mean}</span></div>
-                <div>Median: <span className="font-semibold">{values.median}</span></div>
-                <div>Min: <span className="font-semibold">{values.min}</span></div>
-                <div>Max: <span className="font-semibold">{values.max}</span></div>
-                <div className="col-span-2">Std Dev: <span className="font-semibold">{values.std}</span></div>
-              </div>
-            </div>
-          ))}
+          {stats.statistics &&
+            Object.entries(stats.statistics).map(([metric, values]) => (
+              <article key={metric} className="border-l-4 border-primary pl-3 py-1">
+                <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300 capitalize mb-1">
+                  {metric.replace(/_/g, ' ')}
+                </h4>
+                <dl className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                  <div>
+                    Mean: <span className="font-semibold">{values.mean}</span>
+                  </div>
+                  <div>
+                    Median: <span className="font-semibold">{values.median}</span>
+                  </div>
+                  <div>
+                    Min: <span className="font-semibold">{values.min}</span>
+                  </div>
+                  <div>
+                    Max: <span className="font-semibold">{values.max}</span>
+                  </div>
+                  <div className="col-span-2">
+                    Std dev: <span className="font-semibold">{values.std}</span>
+                  </div>
+                </dl>
+              </article>
+            ))}
         </div>
-      </div>
+      </section>
 
       {stats.correlations && stats.correlations.length > 0 && (
-        <div>
-          <h3 className="text-md font-semibold mb-2 dark:text-gray-200">Weather Metric Correlations</h3>
+        <section aria-label="Correlation analysis">
+          <h3 className="text-md font-semibold mb-2 dark:text-gray-200">Weather metric correlations</h3>
           <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
             Correlation measures the linear relationship between two variables. Values range from -1 (perfect negative) to +1 (perfect positive).
           </p>
           <div className="space-y-2">
-            {stats.correlations.map((corr, idx) => (
-              <div key={idx} className="bg-gray-50 dark:bg-gray-700/50 rounded p-3">
+            {stats.correlations.map((correlation) => (
+              <article key={correlation.pair} className="bg-gray-50 dark:bg-gray-700/50 rounded p-3">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{corr.pair}</span>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                    corr.strength === 'Strong' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300' :
-                    corr.strength === 'Moderate' ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300' :
-                    corr.strength === 'Weak' ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300' :
-                    'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300'
-                  }`}>
-                    {corr.strength}
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{correlation.pair}</span>
+                  <span
+                    className={`text-xs font-semibold px-2 py-1 rounded ${
+                      correlation.strength === 'Strong'
+                        ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300'
+                        : correlation.strength === 'Moderate'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300'
+                          : correlation.strength === 'Weak'
+                            ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300'
+                    }`}
+                  >
+                    {correlation.strength}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                  <span>Correlation: <strong>{corr.correlation}</strong></span>
-                  <span>p-value: <strong>{corr.p_value}</strong></span>
+                  <span>
+                    Correlation: <strong>{correlation.correlation}</strong>
+                  </span>
+                  <span>
+                    p-value: <strong>{correlation.p_value}</strong>
+                  </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-1">
-                  {corr.correlation > 0.7 ? '↗️ Strong positive relationship' :
-                   corr.correlation > 0.4 ? '↗️ Moderate positive relationship' :
-                   corr.correlation > 0 ? '↗️ Weak positive relationship' :
-                   corr.correlation > -0.4 ? '↘️ Weak negative relationship' :
-                   corr.correlation > -0.7 ? '↘️ Moderate negative relationship' :
-                   '↘️ Strong negative relationship'}
-                  {corr.p_value < 0.05 ? ' (statistically significant)' : ' (not significant)'}
+                  {correlationDescription(correlation.correlation)}{correlation.p_value < 0.05 ? ' (statistically significant)' : ' (not significant)'}
                 </p>
-              </div>
+              </article>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
-  );
+  )
 }
