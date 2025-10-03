@@ -15,7 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
 
-RUN mkdir -p /app/data && chmod 755 /app/data
+RUN mkdir -p /app/data && chmod 755 /app/data && \
+    chmod +x /app/start.sh
 
 RUN adduser --disabled-password --gecos "" appuser && \
     chown -R appuser:appuser /app
@@ -28,4 +29,4 @@ ENV FLASK_CONFIG=production \
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python init_db.py && gunicorn wsgi:app -c gunicorn.conf.py"]
+CMD ["./start.sh"]

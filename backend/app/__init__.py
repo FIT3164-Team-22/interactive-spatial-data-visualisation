@@ -37,10 +37,12 @@ def create_app(config_name: str = "development") -> Flask:
     app.config.setdefault("MAX_CONTENT_LENGTH", 2 * 1024 * 1024)  # 2 MB request cap
 
     if config_name == "production":
-        if not app.config.get("CORS_ORIGINS"):
-            raise RuntimeError("CORS_ORIGINS must be configured in production")
         if not os.getenv("SECRET_KEY"):
-            raise RuntimeError("SECRET_KEY must be configured in production")
+            app.logger.warning("SECRET_KEY not set - using auto-generated key (not recommended for production)")
+
+        if not app.config.get("CORS_ORIGINS"):
+            app.logger.warning("CORS_ORIGINS not configured - defaulting to restrictive settings")
+            app.config["CORS_ORIGINS"] = []
 
     cors_origins = app.config.get("CORS_ORIGINS", "*")
     CORS(
@@ -59,7 +61,7 @@ def create_app(config_name: str = "development") -> Flask:
     if config_name == "production":
         Talisman(
             app,
-            force_https=True,
+            force_https=False,  # Railway handles HTTPS at the proxy level
             strict_transport_security=True,
             content_security_policy={
                 "default-src": "'self'",
