@@ -9,6 +9,7 @@ from app.services import (
     station_service,
     statistics_service,
     weather_service,
+    insights_service,
 )
 from app.utils.validators import (
     handle_validation_error,
@@ -201,6 +202,53 @@ def get_heatmap_data():
         current_app.logger.exception("Failed to fetch heatmap data")
         return jsonify({"error": "Internal server error"}), 500
 
+
+@api_bp.route("/weather/summary")
+@limiter.limit("30 per minute")
+def get_weather_summary():
+    """
+    Provide aggregated statistics and highlights for the current filters.
+    ---
+    parameters:
+      - in: query
+        name: station_ids
+        type: string
+      - in: query
+        name: state
+        type: string
+      - in: query
+        name: start_date
+        type: string
+      - in: query
+        name: end_date
+        type: string
+      - in: query
+        name: metrics
+        type: string
+    responses:
+      200:
+        description: Weather summary payload
+    """
+    try:
+        station_ids = validate_station_ids(request.args.get("station_ids"))
+        start_date = validate_date(request.args.get("start_date"), "start_date")
+        end_date = validate_date(request.args.get("end_date"), "end_date")
+        state = validate_state(request.args.get("state"))
+        metrics = validate_metrics(request.args.get("metrics"))
+
+        summary = insights_service.get_weather_summary(
+            station_ids=station_ids,
+            state=state,
+            start_date=start_date,
+            end_date=end_date,
+            metrics=metrics,
+        )
+        return jsonify(summary)
+    except ValueError as exc:
+        return handle_validation_error(exc)
+    except Exception:  # pragma: no cover - safety net
+        current_app.logger.exception("Failed to fetch weather summary")
+        return jsonify({"error": "Internal server error"}), 500
 
 @api_bp.route("/weather/aggregate")
 @limiter.limit("60 per minute")

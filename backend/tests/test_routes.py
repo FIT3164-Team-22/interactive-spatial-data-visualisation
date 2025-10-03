@@ -17,3 +17,13 @@ def test_health_endpoint(test_app: Flask):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.get_json()["status"] == "healthy"
+
+
+def test_weather_summary_endpoint(test_app: Flask, sample_data):
+    client = test_app.test_client()
+    response = client.get("/api/v1/weather/summary")
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["records_analyzed"] == 5
+    assert "metrics" in payload
+    assert "temperature_max" in payload["metrics"]

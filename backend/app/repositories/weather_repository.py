@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -169,3 +169,156 @@ class WeatherRepository:
             stmt = stmt.where(WeatherData.date <= end_date)
 
         return self._session.execute(stmt).all()
+
+    def fetch_summary_stats(
+        self,
+        *,
+        metric_columns: Dict[str, WeatherData],
+        station_ids: Optional[Iterable[int]] = None,
+        state: Optional[str] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ) -> Dict[str, object]:
+        filters = {
+            "station_ids": tuple(station_ids) if station_ids else None,
+            "state": state.upper() if state else None,
+            "start_date": start_date,
+            "end_date": end_date,
+        }
+
+        base_count_stmt = (
+            select(func.count())
+            .select_from(WeatherData)
+            .join(Station, WeatherData.station_id == Station.id)
+        )
+        base_count_stmt = self._apply_filters(base_count_stmt, **filters)
+        total_records = int(self._session.execute(base_count_stmt).scalar_one())
+
+        distinct_stmt = (
+            select(func.count(func.distinct(WeatherData.station_id)))
+            .select_from(WeatherData)
+            .join(Station, WeatherData.station_id == Station.id)
+        )
+        distinct_stmt = self._apply_filters(distinct_stmt, **filters)
+        station_count = int(self._session.execute(distinct_stmt).scalar_one())
+
+        earliest_stmt = (
+            select(func.min(WeatherData.date))
+            .select_from(WeatherData)
+            .join(Station, WeatherData.station_id == Station.id)
+        )
+        earliest_stmt = self._apply_filters(earliest_stmt, **filters)
+        earliest = self._session.execute(earliest_stmt).scalar_one()
+
+        latest_stmt = (
+            select(func.max(WeatherData.date))
+            .select_from(WeatherData)
+            .join(Station, WeatherData.station_id == Station.id)
+        )
+        latest_stmt = self._apply_filters(latest_stmt, **filters)
+        latest = self._session.execute(latest_stmt).scalar_one()
+
+        metrics_summary = {}
+        for key, column in metric_columns.items():
+            stats_stmt = (
+                select(
+                    func.count(column).label("count"),
+                    func.avg(column).label("avg"),
+                    func.min(column).label("min"),
+                    func.max(column).label("max"),
+                )
+                .select_from(WeatherData)
+                .join(Station, WeatherData.station_id == Station.id)
+                .where(column.is_not(None))
+            )
+            stats_stmt = self._apply_filters(stats_stmt, **filters)
+            count, avg, min_value, max_value = self._session.execute(stats_stmt).first()
+
+            max_record = self._fetch_extreme_record(
+                column=column,
+                station_ids=station_ids,
+                state=state,
+                start_date=start_date,
+                end_date=end_date,
+                ascending=False,
+            )
+            min_record = self._fetch_extreme_record(
+                column=column,
+                station_ids=station_ids,
+                state=state,
+                start_date=start_date,
+                end_date=end_date,
+                ascending=True,
+            )
+
+            metrics_summary[key] = {
+                "count": int(count or 0),
+                "average": float(avg) if avg is not None else None,
+                "minimum": float(min_value) if min_value is not None else None,
+                "maximum": float(max_value) if max_value is not None else None,
+                "max_record": max_record,
+                "min_record": min_record,
+            }
+
+        return {
+            "records": total_records,
+            "stations": station_count,
+            "earliest": earliest,
+            "latest": latest,
+            "metrics": metrics_summary,
+        }
+
+    def _fetch_extreme_record(
+        self,
+        *,
+        column,
+        station_ids: Optional[Iterable[int]] = None,
+        state: Optional[str] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        ascending: bool,
+    ) -> Optional[Dict[str, object]]:
+        stmt = (
+            select(WeatherData, Station)
+            .join(Station, WeatherData.station_id == Station.id)
+            .where(column.is_not(None))
+        )
+        stmt = self._apply_filters(
+            stmt,
+            station_ids=tuple(station_ids) if station_ids else None,
+            state=state.upper() if state else None,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        order_clause = column.asc() if ascending else column.desc()
+        stmt = stmt.order_by(order_clause, WeatherData.date.asc()).limit(1)
+        row = self._session.execute(stmt).first()
+        if not row:
+            return None
+        weather, station = row
+        return {
+            "station_id": station.id,
+            "station_name": station.station_name,
+            "state": station.state,
+            "date": weather.date.isoformat(),
+            "value": getattr(weather, column.key),
+        }
+
+    def _apply_filters(
+        self,
+        stmt,
+        *,
+        station_ids: Optional[Sequence[int]] = None,
+        state: Optional[str] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ):
+        if station_ids:
+            stmt = stmt.where(WeatherData.station_id.in_(tuple(station_ids)))
+        if state:
+            stmt = stmt.where(Station.state == state)
+        if start_date:
+            stmt = stmt.where(WeatherData.date >= start_date)
+        if end_date:
+            stmt = stmt.where(WeatherData.date <= end_date)
+        return stmt

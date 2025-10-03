@@ -11,6 +11,7 @@ const StationMap = lazy(() => import('../Map/StationMap'))
 const TimeSeriesChart = lazy(() => import('../Charts/TimeSeriesChart'))
 const DistributionCharts = lazy(() => import('../Charts/DistributionCharts'))
 const StatisticsPanel = lazy(() => import('../Statistics/StatisticsPanel'))
+const InsightsPanel = lazy(() => import('../Insights/InsightsPanel'))
 
 const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 const docsUrl = apiBase ? `${apiBase}/docs` : '/docs'
@@ -173,8 +174,8 @@ export function DashboardContent({ isSidebarCollapsed }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 mt-0">
-        <div className="lg:col-span-2 h-[280px] overflow-y-auto bg-white dark:bg-custom-card rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 p-6 hover:shadow-2xl transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+      <div className="flex flex-col gap-4 mt-0">
+        <div className="h-[280px] overflow-y-auto bg-white dark:bg-custom-card rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 p-6 hover:shadow-2xl transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <ErrorBoundary>
             <Suspense fallback={<SkeletonLoader type="stats" />}>
               <StatisticsPanel />
@@ -182,16 +183,12 @@ export function DashboardContent({ isSidebarCollapsed }) {
           </ErrorBoundary>
         </div>
 
-        <div className="bg-white dark:bg-custom-card rounded-lg shadow-lg p-4 hover:shadow-2xl transition-all duration-300 border border-gray-300 dark:border-gray-600 h-[280px] animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">About</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            Interactive Spatial Data Visualization - Australian Bureau of Meteorology
-          </p>
-          <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-            <p>377 weather stations</p>
-            <p>2019-2025 data range</p>
-            <p>5 meteorological metrics</p>
-          </div>
+        <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <ErrorBoundary>
+            <Suspense fallback={<SkeletonLoader type="stats" />}>
+              <InsightsPanel />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
 

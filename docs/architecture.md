@@ -9,6 +9,7 @@
 - **Services**: Thin service layer providing orchestration, logging, and DTO generation
 - **Migrations**: Alembic (`backend/alembic`) with initial schema revision `0001_create_schema.py`
 - **Docs**: Flasgger swagger UI available at `/docs`
+- **Insights**: `/api/v1/weather/summary` provides aggregated stats and notable highs/lows for dashboards
 - **Production**: Gunicorn (`gunicorn.conf.py`) behind Flask-Talisman, Compress, and request size limits
 
 ## Frontend

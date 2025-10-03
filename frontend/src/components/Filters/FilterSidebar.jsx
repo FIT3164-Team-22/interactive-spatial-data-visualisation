@@ -3,6 +3,7 @@ import { DATE_BOUNDS } from '../../config'
 import { useFilters } from '../../context/FilterContext'
 import { useStates } from '../../hooks/useStations'
 import Tooltip from '../common/Tooltip'
+import { toast } from '../../utils/toast'
 
 const METRIC_OPTIONS = [
   { id: 'temperature', label: 'Temperature', tooltip: 'Daily maximum temperature in degrees Celsius' },
@@ -12,9 +13,20 @@ const METRIC_OPTIONS = [
   { id: 'evapotranspiration', label: 'Evapotranspiration', tooltip: 'Daily evapotranspiration in millimetres' },
 ]
 
+const SAVED_VIEWS_KEY = 'dashboard:savedViews'
+
 export default function FilterSidebar({ onCollapseChange }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [dateError, setDateError] = useState('')
+  const [savedViews, setSavedViews] = useState(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_VIEWS_KEY)
+      return raw ? JSON.parse(raw) : []
+    } catch (error) {
+      console.error('Failed to parse saved views', error)
+      return []
+    }
+  })
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -28,6 +40,14 @@ export default function FilterSidebar({ onCollapseChange }) {
       onCollapseChange(isCollapsed)
     }
   }, [isCollapsed, onCollapseChange])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(savedViews))
+    } catch (error) {
+      console.error('Failed to persist saved views', error)
+    }
+  }, [savedViews])
 
   const {
     selectedState,
@@ -44,6 +64,10 @@ export default function FilterSidebar({ onCollapseChange }) {
     setClusteringEnabled,
     showStations,
     setShowStations,
+    aggregation,
+    setAggregation,
+    selectedStationId,
+    setSelectedStationId,
   } = useFilters()
 
   const { data: states } = useStates()
@@ -77,6 +101,53 @@ export default function FilterSidebar({ onCollapseChange }) {
     },
     [startDate, setEndDate, validateDates],
   )
+
+  const handleSaveView = () => {
+    const name = window.prompt('Name this view')
+    if (!name) return
+
+    const trimmed = name.trim()
+    if (!trimmed) return
+
+    const view = {
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      name: trimmed,
+      state: selectedState,
+      startDate,
+      endDate,
+      selectedMetric,
+      selectedStationId,
+      mapStyle,
+      clusteringEnabled,
+      showStations,
+      aggregation,
+    }
+
+    setSavedViews((prev) => {
+      const filtered = prev.filter((item) => item.name.toLowerCase() !== trimmed.toLowerCase())
+      return [...filtered, view]
+    })
+    toast.success('View saved')
+  }
+
+  const handleApplyView = (view) => {
+    if (!view) return
+    setSelectedState(view.state || '')
+    setStartDate(view.startDate || DATE_BOUNDS.min)
+    setEndDate(view.endDate || DATE_BOUNDS.max)
+    setSelectedMetric(view.selectedMetric || 'temperature')
+    setAggregation(view.aggregation || 'daily')
+    setSelectedStationId(view.selectedStationId ?? null)
+    setMapStyle(view.mapStyle || 'standard')
+    setClusteringEnabled(view.clusteringEnabled ?? true)
+    setShowStations(view.showStations ?? true)
+    toast.success('Loaded view "' + view.name + '"')
+  }
+
+  const handleDeleteView = (id) => {
+    setSavedViews((prev) => prev.filter((view) => view.id !== id))
+    toast.info('View removed')
+  }
 
   const metrics = useMemo(() => METRIC_OPTIONS, [])
 
@@ -224,6 +295,49 @@ export default function FilterSidebar({ onCollapseChange }) {
             </select>
           </section>
 
+          <section aria-labelledby="saved-views-heading">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 id="saved-views-heading" className="text-primary font-semibold text-sm uppercase tracking-wide">
+                Saved Views
+              </h3>
+              <Tooltip content="Store and reuse frequently accessed filter combinations" position="right">
+                <span aria-hidden="true" className="text-gray-500 dark:text-gray-400 font-semibold">?</span>
+              </Tooltip>
+            </div>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleSaveView}
+                className="w-full px-3 py-2 border border-dashed border-primary text-primary rounded-lg hover:bg-primary/10 transition text-sm font-medium"
+              >
+                Save current view
+              </button>
+              {savedViews.length === 0 ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">No saved views yet.</p>
+              ) : (
+                savedViews.map((view) => (
+                  <div key={view.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/40 rounded-lg px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => handleApplyView(view)}
+                      className="text-sm text-left text-gray-800 dark:text-gray-200 hover:underline"
+                    >
+                      {view.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteView(view.id)}
+                      className="text-xs text-red-500 dark:text-red-400 hover:underline"
+                      aria-label={`Delete saved view ${view.name}`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
           <hr className="border-gray-200 dark:border-gray-700" />
 
           <section aria-labelledby="map-settings-heading">
@@ -314,6 +428,22 @@ export default function FilterSidebar({ onCollapseChange }) {
               </div>
             </div>
           </section>
+          <section aria-labelledby="about-heading">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 id="about-heading" className="text-primary font-semibold text-sm uppercase tracking-wide">
+                About
+              </h3>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+              Interactive Spatial Data Visualization — Australian Bureau of Meteorology.
+            </p>
+            <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+              <li>377 weather stations</li>
+              <li>Data range: 2019 – 2025</li>
+              <li>Five core meteorological metrics</li>
+            </ul>
+          </section>
+
         </div>
       </div>
 
