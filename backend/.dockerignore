@@ -5,6 +5,5 @@ __pycache__/
 *.db
 .env
 .venv/
-data/
 pytest.ini
 .alembic_history

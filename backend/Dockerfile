@@ -15,10 +15,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN adduser --disabled-password --gecos "" appuser
+# Create database directory and initialize database
+RUN mkdir -p /data && \
+    python init_db.py && \
+    mv bom_data.db /data/bom_data.db
+
+RUN adduser --disabled-password --gecos "" appuser && \
+    chown -R appuser:appuser /data
+
 USER appuser
 
 ENV FLASK_CONFIG=production \
-    PORT=8000
+    PORT=8000 \
+    DATABASE_URL=sqlite:////data/bom_data.db
 
 CMD ["gunicorn", "wsgi:app", "-c", "gunicorn.conf.py"]

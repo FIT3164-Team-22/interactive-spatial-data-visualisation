@@ -2,12 +2,11 @@ services:
   backend:
     build:
       context: ./backend
-    env_file:
-      - ./backend/.env.example
     environment:
-      FLASK_CONFIG: production
+      FLASK_CONFIG: development
       DATABASE_URL: sqlite:////data/bom_data.db
       GUNICORN_WORKERS: 4
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:3000"
     volumes:
       - backend-data:/data
     ports:
@@ -17,7 +16,7 @@ services:
     build:
       context: ./frontend
     environment:
-      VITE_API_URL: http://backend:8000
+      VITE_API_URL: http://localhost:5000
     depends_on:
       - backend
     ports:
