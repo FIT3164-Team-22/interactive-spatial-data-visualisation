@@ -1,41 +1,20 @@
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models import Base, Station, WeatherData
 from datetime import datetime
 import os
 import logging
-from config import config_by_name
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
-
-# Use config to get database URL
-config_name = os.getenv('FLASK_CONFIG', 'development')
-config = config_by_name[config_name]
-DB_PATH = config.DATABASE_URL
+DB_PATH = f'sqlite:///{os.path.join(BASE_DIR, "bom_data.db")}'
 
 def init_database():
-    logger.info(f"Initializing database at: {DB_PATH}")
-
-    # Check if database already exists and has data
     engine = create_engine(DB_PATH, echo=False)
-
-    try:
-        Session = sessionmaker(bind=engine)
-        session = Session()
-        station_count = session.execute(text("SELECT COUNT(*) FROM stations")).scalar()
-        if station_count and station_count > 0:
-            logger.info(f"Database already initialized with {station_count} stations. Skipping initialization.")
-            session.close()
-            return
-        session.close()
-    except Exception:
-        logger.info("Database does not exist or is empty. Proceeding with initialization.")
-
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
