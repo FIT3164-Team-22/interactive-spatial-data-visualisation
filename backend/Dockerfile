@@ -7,6 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
@@ -14,14 +15,11 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-
-# Create database directory and initialize database
 RUN mkdir -p /data && \
-    python init_db.py && \
-    mv bom_data.db /data/bom_data.db
+    chmod +x start.sh
 
 RUN adduser --disabled-password --gecos "" appuser && \
-    chown -R appuser:appuser /data
+    chown -R appuser:appuser /app /data
 
 USER appuser
 
@@ -29,4 +27,4 @@ ENV FLASK_CONFIG=production \
     PORT=8000 \
     DATABASE_URL=sqlite:////data/bom_data.db
 
-CMD ["gunicorn", "wsgi:app", "-c", "gunicorn.conf.py"]
+CMD ["./start.sh"]

@@ -17,6 +17,7 @@ services:
       context: ./frontend
     environment:
       VITE_API_URL: http://localhost:5000
+      BACKEND_URL: http://backend:8000
     depends_on:
       - backend
     ports:

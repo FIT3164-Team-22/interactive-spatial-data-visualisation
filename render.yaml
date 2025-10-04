@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: interactive-weather-backend
+    env: docker
+    plan: starter
+    autoDeploy: true
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    envVars:
+      - key: FLASK_CONFIG
+        value: production
+      - key: DATABASE_URL
+        value: sqlite:////data/bom_data.db
+      - key: CORS_ORIGINS
+        value: https://your-frontend-domain.example
+    disk:
+      name: bom-data
+      mountPath: /data
+      sizeGB: 1
+    healthCheckPath: /health
+
+  - type: web
+    name: interactive-weather-frontend
+    env: docker
+    plan: starter
+    autoDeploy: true
+    dockerfilePath: frontend/Dockerfile
+    dockerContext: frontend
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: interactive-weather-backend
+          property: url
