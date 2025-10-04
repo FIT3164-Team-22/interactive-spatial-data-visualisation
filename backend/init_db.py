@@ -6,6 +6,7 @@ import os
 from typing import Tuple
 
 import pandas as pd
+import pyarrow.parquet as pq
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 
@@ -80,33 +81,51 @@ def init_database(force: bool = False) -> Tuple[int, int]:
     station_count = len(station_map)
     logger.info("Inserted %s stations", station_count)
 
-    logger.info("Loading weather data from Parquet...")
-    weather_df = pd.read_parquet(os.path.join(DATA_DIR, "bomweatherdata.parquet"))
-    weather_df["Date"] = pd.to_datetime(weather_df["Date"], format="%d/%m/%Y")
+    logger.info("Loading weather data from Parquet in batches...")
+    parquet_path = os.path.join(DATA_DIR, "bomweatherdata.parquet")
+    parquet_file = pq.ParquetFile(parquet_path)
 
-    weather_records = []
-    for _, row in weather_df.iterrows():
-        station_id = station_map.get((row["State"], row["Station Name"]))
-        if not station_id:
-            continue
-        weather_records.append(
-            {
-                "station_id": station_id,
-                "date": row["Date"],
-                "evapotranspiration_mm": row.get("Evapo-Transpiration (mm)"),
-                "rainfall_mm": row.get("Rain (mm)"),
-                "temp_max_c": row.get("Maximum Temperature (C)"),
-                "temp_min_c": row.get("Minimum Temperature (C)"),
-                "humidity_max_percent": row.get("Maximum Relative Humidity (%)"),
-                "humidity_min_percent": row.get("Minimum Relative Humidity (%)"),
-                "wind_speed_ms": row.get("Average 10m Wind Speed (m/s)"),
-            }
-        )
+    batch_size = int(os.getenv("INIT_DB_BATCH_SIZE", "10000"))
+    weather_count = 0
 
-    session.bulk_insert_mappings(WeatherData, weather_records)
-    session.commit()
-    weather_count = len(weather_records)
-    logger.info("Inserted %s weather records", weather_count)
+    for batch_index, record_batch in enumerate(parquet_file.iter_batches(batch_size=batch_size), start=1):
+        batch_df = record_batch.to_pandas()
+        batch_df["Date"] = pd.to_datetime(batch_df["Date"], format="%d/%m/%Y")
+        columns = batch_df.columns.tolist()
+
+        weather_records = []
+        for values in batch_df.itertuples(index=False, name=None):
+            row = dict(zip(columns, values))
+            station_id = station_map.get((row["State"], row["Station Name"]))
+            if not station_id:
+                continue
+            date_value = row["Date"].date() if hasattr(row["Date"], "date") else row["Date"]
+            weather_records.append(
+                {
+                    "station_id": station_id,
+                    "date": date_value,
+                    "evapotranspiration_mm": row.get("Evapo-Transpiration (mm)"),
+                    "rainfall_mm": row.get("Rain (mm)"),
+                    "temp_max_c": row.get("Maximum Temperature (C)"),
+                    "temp_min_c": row.get("Minimum Temperature (C)"),
+                    "humidity_max_percent": row.get("Maximum Relative Humidity (%)"),
+                    "humidity_min_percent": row.get("Minimum Relative Humidity (%)"),
+                    "wind_speed_ms": row.get("Average 10m Wind Speed (m/s)"),
+                }
+            )
+
+        if weather_records:
+            session.bulk_insert_mappings(WeatherData, weather_records)
+            session.commit()
+            weather_count += len(weather_records)
+            logger.info(
+                "Inserted batch %s (%s records) – total %s",
+                batch_index,
+                len(weather_records),
+                weather_count,
+            )
+
+    logger.info("Inserted %s weather records in total", weather_count)
 
     session.close()
     logger.info("Database initialization complete!")
