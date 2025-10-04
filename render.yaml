@@ -27,8 +27,10 @@ services:
     dockerfilePath: frontend/Dockerfile
     dockerContext: frontend
     envVars:
-      - key: BACKEND_URL
+      - key: BACKEND_HOST
         fromService:
           type: web
           name: interactive-weather-backend
-          property: url
+          property: host
+      - key: BACKEND_SCHEME
+        value: https
