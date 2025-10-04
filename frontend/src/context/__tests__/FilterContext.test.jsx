@@ -8,5 +8,6 @@ describe('FilterContext', () => {
     expect(result.current.startDate).toBe(DATE_BOUNDS.min)
     expect(result.current.endDate).toBe(DATE_BOUNDS.max)
     expect(result.current.selectedMetric).toBe('temperature')
+    expect(result.current.showHeatmap).toBe(true)
   })
 })

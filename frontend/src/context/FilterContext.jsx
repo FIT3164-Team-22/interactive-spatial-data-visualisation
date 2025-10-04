@@ -33,6 +33,7 @@ const parseQueryParams = () => {
       return Number.isNaN(parsed) ? null : parsed
     })(),
     aggregation: params.get(QUERY_KEYS.aggregation) || 'daily',
+    showHeatmap: params.get('heatmap') !== '0',
   }
 }
 
@@ -48,6 +49,7 @@ const syncQueryParams = (filters) => {
   if (filters.selectedStation) params.set(QUERY_KEYS.station, String(filters.selectedStation))
   if (filters.aggregation !== 'daily')
     params.set(QUERY_KEYS.aggregation, filters.aggregation)
+  if (!filters.showHeatmap) params.set('heatmap', '0')
 
   const query = params.toString()
   const newUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`
@@ -65,6 +67,7 @@ export const FilterProvider = ({ children }) => {
   const [mapStyle, setMapStyle] = useState('standard')
   const [clusteringEnabled, setClusteringEnabled] = useState(true)
   const [showStations, setShowStations] = useState(true)
+  const [showHeatmap, setShowHeatmap] = useState(initial.showHeatmap ?? true)
 
   const [aggregation, setAggregation] = useState(initial.aggregation)
 
@@ -76,8 +79,9 @@ export const FilterProvider = ({ children }) => {
       selectedMetric,
       selectedStation: selectedStationId,
       aggregation,
+      showHeatmap,
     })
-  }, [selectedState, startDate, endDate, selectedMetric, selectedStationId, aggregation])
+  }, [selectedState, startDate, endDate, selectedMetric, selectedStationId, aggregation, showHeatmap])
 
   const filters = useMemo(
     () => ({
@@ -87,8 +91,9 @@ export const FilterProvider = ({ children }) => {
       selectedMetric,
       selectedStation: selectedStationId,
       aggregation,
+      showHeatmap,
     }),
-    [selectedState, startDate, endDate, selectedMetric, selectedStationId, aggregation],
+    [selectedState, startDate, endDate, selectedMetric, selectedStationId, aggregation, showHeatmap],
   )
 
   const value = useMemo(
@@ -109,6 +114,8 @@ export const FilterProvider = ({ children }) => {
       setClusteringEnabled,
       showStations,
       setShowStations,
+      showHeatmap,
+      setShowHeatmap,
       aggregation,
       setAggregation,
       filters,
@@ -122,6 +129,7 @@ export const FilterProvider = ({ children }) => {
       mapStyle,
       clusteringEnabled,
       showStations,
+      showHeatmap,
       aggregation,
       filters,
     ],

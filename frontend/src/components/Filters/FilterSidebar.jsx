@@ -64,6 +64,8 @@ export default function FilterSidebar({ onCollapseChange }) {
     setClusteringEnabled,
     showStations,
     setShowStations,
+    showHeatmap,
+    setShowHeatmap,
     aggregation,
     setAggregation,
     selectedStationId,
@@ -120,6 +122,7 @@ export default function FilterSidebar({ onCollapseChange }) {
       mapStyle,
       clusteringEnabled,
       showStations,
+      showHeatmap,
       aggregation,
     }
 
@@ -141,6 +144,7 @@ export default function FilterSidebar({ onCollapseChange }) {
     setMapStyle(view.mapStyle || 'standard')
     setClusteringEnabled(view.clusteringEnabled ?? true)
     setShowStations(view.showStations ?? true)
+    setShowHeatmap(view.showHeatmap ?? true)
     toast.success('Loaded view "' + view.name + '"')
   }
 
@@ -395,6 +399,33 @@ export default function FilterSidebar({ onCollapseChange }) {
                 </button>
               </div>
 
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="heatmap-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                    Show Heatmap
+                  </label>
+                  <Tooltip content="Toggle the heatmap overlay on the map" position="right">
+                    <span aria-hidden="true" className="text-gray-500 dark:text-gray-400 font-semibold">?</span>
+                  </Tooltip>
+                </div>
+                <button
+                  id="heatmap-toggle"
+                  onClick={() => setShowHeatmap(!showHeatmap)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                    showHeatmap ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                  role="switch"
+                  aria-checked={showHeatmap}
+                  type="button"
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      showHeatmap ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
               <div
                 className={`flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-opacity ${
                   !showStations ? 'opacity-50 pointer-events-none' : ''
@@ -435,11 +466,11 @@ export default function FilterSidebar({ onCollapseChange }) {
               </h3>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-              Interactive Spatial Data Visualization — Australian Bureau of Meteorology.
+              Interactive Spatial Data Visualization - Australian Bureau of Meteorology.
             </p>
             <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
               <li>377 weather stations</li>
-              <li>Data range: 2019 – 2025</li>
+              <li>Data range: 2019 - 2025</li>
               <li>Five core meteorological metrics</li>
             </ul>
           </section>

@@ -1,16 +1,24 @@
 import { useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import 'leaflet.heat'
 import { useFilters } from '../../context/FilterContext'
 import { useHeatmapData } from '../../hooks/useStations'
+import { metricConfig } from '../../constants/metrics'
 
 const stationIcon = L.divIcon({
   className: 'custom-station-marker',
   html: '<div style="width: 8px; height: 8px; background: #5865F2; border-radius: 50%; cursor: pointer; transition: all 0.2s;"></div>',
   iconSize: [8, 8],
   iconAnchor: [4, 4],
+})
+
+const selectedStationIcon = L.divIcon({
+  className: 'custom-selected-station-marker',
+  html: '<div style="width: 20px; height: 20px; background: #DC2626; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid #F9FAFB; box-shadow: 0 0 14px rgba(220, 38, 38, 0.7);"></div>',
+  iconSize: [20, 20],
+  iconAnchor: [10, 20],
 })
 
 const HeatmapLayer = ({ data, metric }) => {
@@ -93,7 +101,7 @@ const getMetricUnit = (metric) => {
     case 'humidity':
       return '%'
     case 'wind':
-      return 'km/h'
+      return 'm/s'
     default:
       return ''
   }
@@ -110,17 +118,7 @@ const StationMarkers = ({ stations, onStationClick, clusteringEnabled, selectedM
       eventHandlers={{
         click: () => onStationClick(station.station_id),
       }}
-    >
-      <Popup>
-        <strong>{station.station_name}</strong>
-        <br />
-        <small>State: {station.state}</small>
-        <br />
-        {station.value !== null && station.value !== undefined
-          ? `${station.value.toFixed(1)} ${unit}`
-          : 'No recent value'}
-      </Popup>
-    </Marker>
+    />
   ))
 
   if (!clusteringEnabled) {
@@ -185,8 +183,21 @@ const mapStyles = {
   },
 }
 
+const MapInteractionLayer = ({ onMapClick }) => {
+  useMapEvents({
+    click(event) {
+      const target = event.originalEvent?.target
+      if (target && target.closest && target.closest('.leaflet-marker-icon')) {
+        return
+      }
+      onMapClick()
+    },
+  })
+  return null
+}
+
 export default function StationMap() {
-  const { selectedMetric, setSelectedStationId, selectedStationId, mapStyle, clusteringEnabled, showStations, startDate, endDate } = useFilters()
+  const { selectedMetric, setSelectedStationId, selectedStationId, mapStyle, clusteringEnabled, showStations, showHeatmap, startDate, endDate } = useFilters()
   const { data: heatmapData, isLoading } = useHeatmapData(selectedMetric, startDate, endDate)
 
   const handleStationClick = (stationId) => {
@@ -212,6 +223,15 @@ export default function StationMap() {
   }
 
   const currentMapStyle = mapStyles[mapStyle] || mapStyles.standard
+  const selectedStationData = selectedStationId && heatmapData ? heatmapData.find((item) => item.station_id === selectedStationId) : null
+  const selectedMetricLabel = metricConfig[selectedMetric]?.label || selectedMetric
+  const selectedMetricUnit = (() => {
+    if (selectedMetric === 'temperature') return '°C'
+    if (selectedMetric === 'rainfall' || selectedMetric === 'evapotranspiration') return 'mm'
+    if (selectedMetric === 'humidity') return '%'
+    if (selectedMetric === 'wind') return 'm/s'
+    return ''
+  })()
 
   return (
     <div className="h-full w-full rounded-lg overflow-hidden shadow-lg relative">
@@ -233,17 +253,48 @@ export default function StationMap() {
         zoomControl
         attributionControl={false}
       >
+        <MapInteractionLayer onMapClick={handleClearSelection} />
         <TileLayer url={currentMapStyle.url} attribution={currentMapStyle.attribution} />
-        <HeatmapLayer data={heatmapData} metric={selectedMetric} />
+        {showHeatmap && <HeatmapLayer data={heatmapData} metric={selectedMetric} />}
         {showStations && (
-          <StationMarkers
-            stations={heatmapData}
-            onStationClick={handleStationClick}
-            clusteringEnabled={clusteringEnabled}
-            selectedMetric={selectedMetric}
+        <StationMarkers
+          stations={heatmapData}
+          onStationClick={handleStationClick}
+          clusteringEnabled={clusteringEnabled}
+          selectedMetric={selectedMetric}
+        />
+        )}
+        {selectedStationData && (
+          <Marker
+            key={`selected-${selectedStationData.station_id}`}
+            position={[selectedStationData.latitude, selectedStationData.longitude]}
+            icon={selectedStationIcon}
+            zIndexOffset={1000}
           />
         )}
       </MapContainer>
+      {selectedStationData && (
+        <div className="absolute left-3 bottom-3 md:left-4 md:bottom-4 z-[1001] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl px-4 py-3 max-w-xs animate-fade-in">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Selected station</p>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+              {selectedStationData.station_name}
+            </h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              {selectedStationData.state}
+            </p>
+            {typeof selectedStationData.value === 'number' && (
+              <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                {selectedMetricLabel}: {' '}
+                <span className="text-lg font-semibold text-primary">
+                  {selectedStationData.value.toFixed(2)}
+                  {selectedMetricUnit ? ` ${selectedMetricUnit}` : ''}
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
