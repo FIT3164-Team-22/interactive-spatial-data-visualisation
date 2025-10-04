@@ -17,6 +17,19 @@ fi
 
 export BACKEND_URL
 
-envsubst '${BACKEND_URL}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf
+if [ "${BACKEND_HOST_HEADER:-}" = "" ]; then
+  BACKEND_HOST_HEADER=$(printf '%s\n' "$BACKEND_URL" | sed -e 's#^[a-zA-Z]*://##' -e 's#/.*##')
+fi
+
+if printf '%s' "$BACKEND_URL" | grep -qi '^https://'; then
+  PROXY_SSL_DIRECTIVES=$(printf '    proxy_ssl_server_name on;\n    proxy_ssl_name %s;\n' "$BACKEND_HOST_HEADER")
+else
+  PROXY_SSL_DIRECTIVES=""
+fi
+
+export BACKEND_HOST_HEADER
+export PROXY_SSL_DIRECTIVES
+
+envsubst '${BACKEND_URL} ${BACKEND_HOST_HEADER} ${PROXY_SSL_DIRECTIVES}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf
 
 exec nginx -g "daemon off;"
