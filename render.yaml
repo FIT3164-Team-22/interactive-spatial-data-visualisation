@@ -33,4 +33,6 @@ services:
           name: interactive-weather-backend
           property: host
       - key: BACKEND_SCHEME
-        value: https
+        value: http
+      - key: BACKEND_PORT
+        value: "8000"
