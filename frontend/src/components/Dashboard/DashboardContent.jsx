@@ -3,6 +3,7 @@ import { useFilters } from '../../context/FilterContext'
 import { useTheme } from '../../context/ThemeContext'
 import ErrorBoundary from '../common/ErrorBoundary'
 import ExportModal from '../common/ExportModal'
+import GuideModal from '../common/GuideModal'
 import SkeletonLoader from '../common/SkeletonLoader'
 import { toast } from '../../utils/toast'
 import apiClient from '../../api/client'
@@ -13,8 +14,7 @@ const DistributionCharts = lazy(() => import('../Charts/DistributionCharts'))
 const StatisticsPanel = lazy(() => import('../Statistics/StatisticsPanel'))
 const InsightsPanel = lazy(() => import('../Insights/InsightsPanel'))
 
-const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
-const docsUrl = apiBase ? `${apiBase}/docs` : '/docs'
+const guidePdfUrl = import.meta.env.VITE_GUIDE_PDF_URL || '/guide.pdf'
 
 export function DashboardContent({ isSidebarCollapsed }) {
   const { filters } = useFilters()
@@ -23,6 +23,7 @@ export function DashboardContent({ isSidebarCollapsed }) {
   const [isResizing, setIsResizing] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [exportType, setExportType] = useState('')
+  const [isGuideOpen, setIsGuideOpen] = useState(false)
 
   useEffect(() => {
     setIsResizing(true)
@@ -74,6 +75,14 @@ export function DashboardContent({ isSidebarCollapsed }) {
     setExportType('')
   }
 
+  const handleGuideOpen = () => {
+    setIsGuideOpen(true)
+  }
+
+  const handleGuideClose = () => {
+    setIsGuideOpen(false)
+  }
+
   const pageTitle = useMemo(() => 'Meteorological Data Dashboard', [])
 
   return (
@@ -101,14 +110,13 @@ export function DashboardContent({ isSidebarCollapsed }) {
           >
             Export CSV
           </button>
-          <a
-            href={docsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={handleGuideOpen}
             className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:opacity-90 transition font-medium text-sm"
+            type="button"
           >
-            API Docs
-          </a>
+            Guide
+          </button>
         </div>
       </div>
 
@@ -201,10 +209,15 @@ export function DashboardContent({ isSidebarCollapsed }) {
         endDate={filters.endDate}
         currentMetric={filters.selectedMetric}
       />
+      <GuideModal
+        isOpen={isGuideOpen}
+        onClose={handleGuideClose}
+        pdfUrl={guidePdfUrl}
+        downloadFileName='interactive-spatial-data-visualisation-guide.pdf'
+      />
     </div>
   )
 }
 
 export default DashboardContent
-
 
