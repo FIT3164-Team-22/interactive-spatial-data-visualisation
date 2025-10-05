@@ -279,7 +279,7 @@ export default function StationMap() {
         center={[-25.2744, 133.7751]}
         zoom={5}
         className="h-full w-full"
-        zoomControl
+        zoomControl={false}
         attributionControl={false}
       >
         <MapInteractionLayer onMapClick={handleClearSelection} />

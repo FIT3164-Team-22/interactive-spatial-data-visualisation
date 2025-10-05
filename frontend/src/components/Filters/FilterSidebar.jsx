@@ -168,18 +168,20 @@ export default function FilterSidebar({ onCollapseChange }) {
   return (
     <>
       {isCollapsed && (
-        <button
-          onClick={() => setIsCollapsed(false)}
-          className="fixed top-7 md:top-9 left-4 md:left-6 z-50 px-2 py-3 bg-discord-light dark:bg-discord-darker text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-discord-dark transition font-medium text-sm aspect-square flex items-center justify-center"
-          aria-label="Open sidebar"
-          type="button"
-        >
-          <div className="w-5 h-4 flex flex-col justify-between" aria-hidden="true">
-            <span className="block h-0.5 bg-gray-800 dark:bg-gray-200 rounded"></span>
-            <span className="block h-0.5 bg-gray-800 dark:bg-gray-200 rounded"></span>
-            <span className="block h-0.5 bg-gray-800 dark:bg-gray-200 rounded"></span>
-          </div>
-        </button>
+        <div className="fixed top-7 md:top-9 left-4 md:left-6 z-[9999] pointer-events-none">
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="px-2 py-3 bg-discord-light dark:bg-discord-darker text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-discord-dark transition font-medium text-sm aspect-square flex items-center justify-center pointer-events-auto"
+            aria-label="Open sidebar"
+            type="button"
+          >
+            <div className="w-5 h-4 flex flex-col justify-between" aria-hidden="true">
+              <span className="block h-0.5 bg-gray-800 dark:bg-gray-200 rounded"></span>
+              <span className="block h-0.5 bg-gray-800 dark:bg-gray-200 rounded"></span>
+              <span className="block h-0.5 bg-gray-800 dark:bg-gray-200 rounded"></span>
+            </div>
+          </button>
+        </div>
       )}
 
       <div
