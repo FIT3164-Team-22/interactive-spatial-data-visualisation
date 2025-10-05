@@ -1,76 +1,76 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'
 
-export default function ScreenSizeWarning({ children }) {
-  const [warningMessage, setWarningMessage] = useState(null);
-
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      const ratio = width / height;
-
-      // Detect zoom level
-      const zoomLevel = Math.round((window.devicePixelRatio || 1) * 100);
-
-      // Define acceptable aspect ratio range
-      const minRatio = 1140 / 1030; // approximately 1.107
-      const maxRatio = 3.0; // Ultra-wide screens (e.g., 32:9 = 3.56, 21:9 = 2.33)
-      const minAspectRatio = 0.5; // Super tall screens
-
-      // Check zoom level (100% is default, allow 80% to 120%)
-      if (zoomLevel < 80 || zoomLevel > 120) {
-        setWarningMessage({
-          title: 'Zoom Level Not Supported',
-          message: 'Sorry, your current browser zoom level is not supported by our platform.',
-          detail: `Your zoom is set to ${zoomLevel}%. Please reset your browser zoom to 100% (press Ctrl+0 or Cmd+0).`
-        });
-      } else if (ratio < minRatio) {
-        setWarningMessage({
-          title: 'Screen Too Narrow',
-          message: 'Sorry, your device screen resolution is not supported by our platform for now.',
-          detail: 'Please use a device with a wider screen or rotate your device to landscape mode.'
-        });
-      } else if (ratio > maxRatio) {
-        setWarningMessage({
-          title: 'Screen Too Wide',
-          message: 'Sorry, your ultra-wide screen resolution is not supported by our platform for now.',
-          detail: 'Please resize your browser window to a standard aspect ratio or use a different display.'
-        });
-      } else if (ratio < minAspectRatio) {
-        setWarningMessage({
-          title: 'Screen Too Tall',
-          message: 'Sorry, your device screen resolution is not supported by our platform for now.',
-          detail: 'Please use a device with a standard aspect ratio or rotate your device.'
-        });
-      } else {
-        setWarningMessage(null);
-      }
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
-
-  if (warningMessage) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-custom-bg">
-        <div className="text-center px-8 max-w-2xl animate-fade-in">
-          <div className="text-8xl mb-6 animate-float">⚠️</div>
-          <h1 className="text-3xl font-bold text-primary mb-4">
-            {warningMessage.title}
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            {warningMessage.message}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
-            {warningMessage.detail}
-          </p>
-        </div>
-      </div>
-    );
+const evaluateViewport = () => {
+  if (typeof window === 'undefined') {
+    return null
   }
 
-  return children;
+  const width = window.innerWidth
+  const height = window.innerHeight
+  const ratio = height ? width / height : 1
+  const zoomLevel = Math.round((window.devicePixelRatio || 1) * 100)
+
+  if (width < 960) {
+    return {
+      title: 'Limited screen width detected',
+      message: 'For the best dashboard experience use a device or window wider than 960px.',
+      detail: 'You can still continue, but some layouts may require additional scrolling.',
+    }
+  }
+
+  if (zoomLevel < 75 || zoomLevel > 175) {
+    return {
+      title: 'Unusual browser zoom level',
+      message: `Your browser zoom is currently set to ${zoomLevel}%.`,
+      detail: 'Reset to 100% for crisp rendering, or keep this zoom if it works for you.',
+    }
+  }
+
+  if (ratio > 3.5) {
+    return {
+      title: 'Ultra-wide aspect ratio detected',
+      message: 'Content might appear stretched on ultra-wide displays.',
+      detail: 'Try reducing the window width or enable snapping for a centered layout.',
+    }
+  }
+
+  return null
+}
+
+export default function ScreenSizeWarning({ children }) {
+  const [warningMessage, setWarningMessage] = useState(() => evaluateViewport())
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
+    const handleResize = () => {
+      setWarningMessage(evaluateViewport())
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('orientationchange', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('orientationchange', handleResize)
+    }
+  }, [])
+
+  return (
+    <>
+      {warningMessage && (
+        <div className="pointer-events-none fixed bottom-4 left-1/2 z-[1100] w-full max-w-xl -translate-x-1/2 px-4">
+          <div className="pointer-events-auto rounded-xl border border-yellow-300 bg-yellow-50/95 p-4 shadow-lg dark:border-yellow-700 dark:bg-yellow-900/90">
+            <h2 className="text-sm font-semibold text-yellow-900 dark:text-yellow-200">{warningMessage.title}</h2>
+            <p className="mt-1 text-xs text-yellow-800 dark:text-yellow-100">{warningMessage.message}</p>
+            <p className="mt-1 text-[11px] text-yellow-700 dark:text-yellow-200/80">{warningMessage.detail}</p>
+          </div>
+        </div>
+      )}
+      {children}
+    </>
+  )
 }

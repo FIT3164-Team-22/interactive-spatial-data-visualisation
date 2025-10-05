@@ -24,7 +24,9 @@ export const useStates = () => {
   })
 }
 
-export const useHeatmapData = (metric = 'temperature', startDate = null, endDate = null) => {
+export const useHeatmapData = (metric = 'temperature', startDate = null, endDate = null, options = {}) => {
+  const { enabled = true } = options
+
   return useQuery({
     queryKey: ['heatmap', metric, startDate, endDate],
     queryFn: async () => {
@@ -36,5 +38,6 @@ export const useHeatmapData = (metric = 'temperature', startDate = null, endDate
       return response.data
     },
     staleTime: 5 * 60 * 1000,
+    enabled,
   })
 }

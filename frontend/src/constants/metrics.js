@@ -24,4 +24,4 @@ export const metricConfig = {
     label: 'Evapotranspiration (mm)',
     color: '#E69F00',
   },
-};
+}

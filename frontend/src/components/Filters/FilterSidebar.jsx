@@ -19,8 +19,11 @@ export default function FilterSidebar({ onCollapseChange }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [dateError, setDateError] = useState('')
   const [savedViews, setSavedViews] = useState(() => {
+    if (typeof window === 'undefined') {
+      return []
+    }
     try {
-      const raw = localStorage.getItem(SAVED_VIEWS_KEY)
+      const raw = window.localStorage.getItem(SAVED_VIEWS_KEY)
       return raw ? JSON.parse(raw) : []
     } catch (error) {
       console.error('Failed to parse saved views', error)
@@ -29,6 +32,10 @@ export default function FilterSidebar({ onCollapseChange }) {
   })
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'))
     }, 350)
@@ -42,8 +49,11 @@ export default function FilterSidebar({ onCollapseChange }) {
   }, [isCollapsed, onCollapseChange])
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
     try {
-      localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(savedViews))
+      window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(savedViews))
     } catch (error) {
       console.error('Failed to persist saved views', error)
     }
@@ -466,12 +476,18 @@ export default function FilterSidebar({ onCollapseChange }) {
               </h3>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-              Interactive Spatial Data Visualization - Australian Bureau of Meteorology.
+              Interactive Spatial Data Visualization &mdash; Project 8, FIT3164 Team 22.
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              Contributors: Rahul Pejathaya, Alice ..., Abdullah ....
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+              Data sourced from the Australian Bureau of Meteorology FTP server.
             </p>
             <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-              <li>377 weather stations</li>
-              <li>Data range: 2019 - 2025</li>
-              <li>Five core meteorological metrics</li>
+              <li>Coverage: 377 stations</li>
+              <li>Metrics: 5 core meteorological measures</li>
+              <li>Temporal span: 2019 &ndash; Aug 2025</li>
             </ul>
           </section>
 

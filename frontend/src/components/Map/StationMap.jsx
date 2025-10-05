@@ -26,19 +26,29 @@ const HeatmapLayer = ({ data, metric }) => {
   const heatLayerRef = useRef(null)
 
   useEffect(() => {
+    const removeLayer = () => {
+      if (heatLayerRef.current) {
+        map.removeLayer(heatLayerRef.current)
+        heatLayerRef.current = null
+      }
+    }
+
     if (!data?.length) {
+      removeLayer()
       return undefined
     }
 
-    if (heatLayerRef.current) {
-      map.removeLayer(heatLayerRef.current)
-    }
+    const buildHeatLayer = () => {
+      removeLayer()
 
-    const heatData = data
-      .filter((entry) => entry.value !== null && entry.value !== undefined)
-      .map((entry) => [entry.latitude, entry.longitude, entry.value || 0])
+      const heatData = data
+        .filter((entry) => entry.value !== null && entry.value !== undefined)
+        .map((entry) => [entry.latitude, entry.longitude, entry.value || 0])
 
-    if (heatData.length > 0) {
+      if (!heatData.length) {
+        return
+      }
+
       const values = heatData.map((entry) => entry[2])
       const sortedValues = [...values].sort((a, b) => a - b)
       const p10 = sortedValues[Math.floor(sortedValues.length * 0.1)]
@@ -66,11 +76,29 @@ const HeatmapLayer = ({ data, metric }) => {
       }).addTo(map)
     }
 
-    return () => {
-      if (heatLayerRef.current) {
-        map.removeLayer(heatLayerRef.current)
+    const size = map.getSize()
+    if (!size.x || !size.y) {
+      const handleResize = () => {
+        map.off('resize', handleResize)
+        buildHeatLayer()
+      }
+
+      map.on('resize', handleResize)
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => map.invalidateSize())
+      } else {
+        setTimeout(() => map.invalidateSize(), 0)
+      }
+
+      return () => {
+        map.off('resize', handleResize)
+        removeLayer()
       }
     }
+
+    buildHeatLayer()
+
+    return removeLayer
   }, [data, metric, map])
 
   useEffect(() => {
@@ -198,7 +226,8 @@ const MapInteractionLayer = ({ onMapClick }) => {
 
 export default function StationMap() {
   const { selectedMetric, setSelectedStationId, selectedStationId, mapStyle, clusteringEnabled, showStations, showHeatmap, startDate, endDate } = useFilters()
-  const { data: heatmapData, isLoading } = useHeatmapData(selectedMetric, startDate, endDate)
+  const shouldFetchHeatmap = showHeatmap || showStations || Boolean(selectedStationId)
+  const { data: heatmapData = [], isLoading } = useHeatmapData(selectedMetric, startDate, endDate, { enabled: shouldFetchHeatmap })
 
   const handleStationClick = (stationId) => {
     setSelectedStationId(stationId)
