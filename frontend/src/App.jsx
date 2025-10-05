@@ -31,7 +31,7 @@ export function App() {
       <ThemeProvider>
         <ScreenSizeWarning>
           <FilterProvider>
-            <div className="flex h-screen bg-background dark:bg-discord-darkest overflow-hidden">
+            <div className="flex h-screen bg-background dark:bg-discord-darkest overflow-hidden relative">
               <FilterSidebar onCollapseChange={setIsSidebarCollapsed} />
               <DashboardContent isSidebarCollapsed={isSidebarCollapsed} />
             </div>

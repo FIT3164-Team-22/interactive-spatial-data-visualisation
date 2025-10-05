@@ -185,7 +185,7 @@ export default function FilterSidebar({ onCollapseChange }) {
       )}
 
       <div
-        className={`fixed lg:relative h-screen bg-white dark:bg-custom-sidebar shadow-2xl overflow-y-auto border-r border-gray-300 dark:border-gray-600 z-40 ${
+        className={`fixed lg:relative h-screen bg-white dark:bg-custom-sidebar shadow-2xl overflow-y-auto border-r border-gray-300 dark:border-gray-600 z-[1100] lg:z-40 ${
           isCollapsed ? '-translate-x-full lg:w-0 lg:p-0 lg:border-0' : 'translate-x-0 w-full lg:w-80 xl:w-96'
         }`}
         style={{ transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', willChange: 'transform, width' }}
@@ -498,7 +498,7 @@ export default function FilterSidebar({ onCollapseChange }) {
 
       {!isCollapsed && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-[1050] lg:hidden"
           onClick={() => setIsCollapsed(true)}
           role="presentation"
         />

@@ -267,11 +267,11 @@ export default function StationMap() {
       {selectedStationId && (
         <button
           onClick={handleClearSelection}
-          className="absolute top-2 right-2 z-[1000] bg-white dark:bg-custom-card text-gray-800 dark:text-gray-200 p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-110 transition-all duration-200 border border-gray-300 dark:border-gray-600 animate-scale-in"
+          className="absolute top-2 right-2 z-[1000] bg-white dark:bg-custom-card text-gray-800 dark:text-gray-200 p-1.5 md:p-2 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-110 transition-all duration-200 border border-gray-300 dark:border-gray-600 animate-scale-in text-sm md:text-base"
           title="Clear station selection"
           type="button"
         >
-          <span aria-hidden="true">X</span>
+          <span aria-hidden="true">✕</span>
           <span className="sr-only">Clear selected station</span>
         </button>
       )}
@@ -303,19 +303,19 @@ export default function StationMap() {
         )}
       </MapContainer>
       {selectedStationData && (
-        <div className="absolute left-3 bottom-3 md:left-4 md:bottom-4 z-[1001] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl px-4 py-3 max-w-xs animate-fade-in">
+        <div className="absolute left-2 bottom-2 md:left-4 md:bottom-4 z-[1001] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl px-3 py-2 md:px-4 md:py-3 max-w-[calc(100%-4rem)] md:max-w-xs animate-fade-in">
           <div>
-            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Selected station</p>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+            <p className="text-[10px] md:text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Selected station</p>
+            <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
               {selectedStationData.station_name}
             </h3>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400 mt-1">
               {selectedStationData.state}
             </p>
             {typeof selectedStationData.value === 'number' && (
-              <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+              <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 mt-2">
                 {selectedMetricLabel}: {' '}
-                <span className="text-lg font-semibold text-primary">
+                <span className="text-base md:text-lg font-semibold text-primary">
                   {selectedStationData.value.toFixed(2)}
                   {selectedMetricUnit ? ` ${selectedMetricUnit}` : ''}
                 </span>
