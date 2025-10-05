@@ -479,7 +479,7 @@ export default function FilterSidebar({ onCollapseChange }) {
               Interactive Spatial Data Visualization &mdash; Project 8, FIT3164 Team 22.
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              Contributors: Rahul Pejathaya, Alice ..., Abdullah ....
+              Contributors: Rahul Pejathaya, Alice (Xinyi) Zhou, Abdullah Sabaa
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
               Data sourced from the Australian Bureau of Meteorology FTP server.
