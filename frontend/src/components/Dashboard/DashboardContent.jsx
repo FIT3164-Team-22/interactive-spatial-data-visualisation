@@ -87,14 +87,14 @@ export function DashboardContent({ isSidebarCollapsed }) {
 
   return (
     <div className="flex-1 flex flex-col p-4 md:p-6 pb-0 overflow-auto bg-background dark:bg-custom-bg">
-      <div className="mb-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'ml-12 md:ml-16' : 'ml-0'}`}>
+      <div className="mb-2 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className={`transition-all duration-300 text-center sm:text-left ${isSidebarCollapsed ? 'sm:ml-12 md:ml-16' : 'ml-0'}`}>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">{pageTitle}</h1>
           <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-1">
             Interactive visualization of Australian Bureau of Meteorology weather data
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap justify-center">
           <button
             onClick={toggleTheme}
             className="px-3 py-2 bg-discord-light dark:bg-discord-darker text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-discord-dark transition font-medium text-xs sm:text-sm"

@@ -39,6 +39,7 @@ const evaluateViewport = () => {
 
 export default function ScreenSizeWarning({ children }) {
   const [warningMessage, setWarningMessage] = useState(() => evaluateViewport())
+  const [isDismissed, setIsDismissed] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -59,12 +60,24 @@ export default function ScreenSizeWarning({ children }) {
     }
   }, [])
 
+  const handleDismiss = () => {
+    setIsDismissed(true)
+  }
+
   return (
     <>
-      {warningMessage && (
+      {warningMessage && !isDismissed && (
         <div className="pointer-events-none fixed bottom-4 left-1/2 z-[1100] w-full max-w-xl -translate-x-1/2 px-4">
-          <div className="pointer-events-auto rounded-xl border border-yellow-300 bg-yellow-50/95 p-4 shadow-lg dark:border-yellow-700 dark:bg-yellow-900/90">
-            <h2 className="text-sm font-semibold text-yellow-900 dark:text-yellow-200">{warningMessage.title}</h2>
+          <div className="pointer-events-auto rounded-xl border border-yellow-300 bg-yellow-50/95 p-4 shadow-lg dark:border-yellow-700 dark:bg-yellow-900/90 relative">
+            <button
+              onClick={handleDismiss}
+              className="absolute top-2 right-2 text-yellow-900 dark:text-yellow-200 hover:text-yellow-700 dark:hover:text-yellow-100 transition-colors"
+              aria-label="Dismiss warning"
+              type="button"
+            >
+              <span className="text-lg leading-none">✕</span>
+            </button>
+            <h2 className="text-sm font-semibold text-yellow-900 dark:text-yellow-200 pr-6">{warningMessage.title}</h2>
             <p className="mt-1 text-xs text-yellow-800 dark:text-yellow-100">{warningMessage.message}</p>
             <p className="mt-1 text-[11px] text-yellow-700 dark:text-yellow-200/80">{warningMessage.detail}</p>
           </div>
