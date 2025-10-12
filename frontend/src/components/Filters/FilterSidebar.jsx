@@ -25,8 +25,8 @@ export default function FilterSidebar({ onCollapseChange }) {
     try {
       const raw = window.localStorage.getItem(SAVED_VIEWS_KEY)
       return raw ? JSON.parse(raw) : []
-    } catch (error) {
-      console.error('Failed to parse saved views', error)
+    } catch {
+      // Silently fail and return empty array if localStorage is unavailable or corrupted
       return []
     }
   })
@@ -54,8 +54,9 @@ export default function FilterSidebar({ onCollapseChange }) {
     }
     try {
       window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(savedViews))
-    } catch (error) {
-      console.error('Failed to persist saved views', error)
+    } catch {
+      // Silently fail if localStorage is unavailable (e.g., private browsing mode)
+      // User will still be able to use saved views during the current session
     }
   }, [savedViews])
 
@@ -84,12 +85,33 @@ export default function FilterSidebar({ onCollapseChange }) {
 
   const { data: states } = useStates()
 
+  // Auto-reset state filter when a station is selected
+  useEffect(() => {
+    if (selectedStationId && selectedState) {
+      setSelectedState('')
+      toast.info('Region filter reset to "All Australia" when analyzing a specific station')
+    }
+  }, [selectedStationId, selectedState, setSelectedState])
+
   const validateDates = useCallback(
     (nextStart, nextEnd) => {
+      // Check if start is after end
       if (nextStart && nextEnd && nextStart > nextEnd) {
         setDateError('Start date must be on or before the end date')
         return false
       }
+
+      // Check if dates are within valid bounds
+      if (nextStart && (nextStart < DATE_BOUNDS.min || nextStart > DATE_BOUNDS.max)) {
+        setDateError(`Start date must be between ${DATE_BOUNDS.min} and ${DATE_BOUNDS.max}`)
+        return false
+      }
+
+      if (nextEnd && (nextEnd < DATE_BOUNDS.min || nextEnd > DATE_BOUNDS.max)) {
+        setDateError(`End date must be between ${DATE_BOUNDS.min} and ${DATE_BOUNDS.max}`)
+        return false
+      }
+
       setDateError('')
       return true
     },
@@ -286,6 +308,32 @@ export default function FilterSidebar({ onCollapseChange }) {
                 </label>
               ))}
             </div>
+
+            <div className="mt-3 p-3 bg-primary/10 dark:bg-primary/20 border border-primary/30 dark:border-primary/40 rounded-lg">
+              <div className="flex items-start gap-2">
+                <svg
+                  className="w-4 h-4 text-primary mt-0.5 flex-shrink-0"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 10-2 0v3a1 1 0 001 1h1a1 1 0 100-2V6zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+
+                <div>
+                  <p className="text-xs font-medium text-primary">
+                    Note on excluded metrics
+                  </p>
+                  <p className="text-xs text-gray-700 dark:text-gray-300 mt-1">
+                    Pan evaporation and solar radiation are not provided in this platform due to their values being inconsistent
+                    and/or insignificant for the average user.
+                  </p>
+                </div>
+              </div>
+            </div>
           </section>
 
           <section aria-labelledby="state-heading">
@@ -297,10 +345,30 @@ export default function FilterSidebar({ onCollapseChange }) {
                 <span aria-hidden="true" className="text-gray-500 dark:text-gray-400 font-semibold">?</span>
               </Tooltip>
             </div>
+            {selectedStationId && (
+              <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <svg className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div>
+                    <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                      Station-specific analysis
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      Region filter is disabled. Click on the map background to deselect and re-enable state filtering.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <select
               value={selectedState}
               onChange={(event) => setSelectedState(event.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition bg-white dark:bg-custom-card text-gray-900 dark:text-gray-100"
+              disabled={!!selectedStationId}
+              className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition bg-white dark:bg-custom-card text-gray-900 dark:text-gray-100 ${
+                selectedStationId ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               <option value="">All Australia</option>
               {states?.map((state) => (
