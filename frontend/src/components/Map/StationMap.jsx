@@ -119,25 +119,7 @@ const HeatmapLayer = ({ data, metric }) => {
   return null
 }
 
-const getMetricUnit = (metric) => {
-  switch (metric) {
-    case 'temperature':
-      return 'degC'
-    case 'rainfall':
-    case 'evapotranspiration':
-      return 'mm'
-    case 'humidity':
-      return '%'
-    case 'wind':
-      return 'm/s'
-    default:
-      return ''
-  }
-}
-
-const StationMarkers = ({ stations, onStationClick, clusteringEnabled, selectedMetric }) => {
-  const unit = getMetricUnit(selectedMetric)
-
+const StationMarkers = ({ stations, onStationClick, clusteringEnabled }) => {
   const markers = stations?.map((station) => (
     <Marker
       key={station.station_id}
@@ -227,7 +209,7 @@ const MapInteractionLayer = ({ onMapClick }) => {
 export default function StationMap() {
   const { selectedMetric, setSelectedStationId, selectedStationId, mapStyle, clusteringEnabled, showStations, showHeatmap, startDate, endDate } = useFilters()
   const shouldFetchHeatmap = showHeatmap || showStations || Boolean(selectedStationId)
-  const { data: heatmapData = [], isLoading } = useHeatmapData(selectedMetric, startDate, endDate, { enabled: shouldFetchHeatmap })
+  const { data: heatmapData = [], isLoading, error } = useHeatmapData(selectedMetric, startDate, endDate, { enabled: shouldFetchHeatmap })
 
   const handleStationClick = (stationId) => {
     setSelectedStationId(stationId)
@@ -251,6 +233,33 @@ export default function StationMap() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-gray-50 dark:bg-custom-card rounded-lg" role="alert">
+        <div className="flex flex-col items-center gap-4 max-w-md px-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Failed to Load Map Data</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              {error?.message || 'Unable to fetch station data. Please check your connection and try again.'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition font-medium text-sm"
+              type="button"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const currentMapStyle = mapStyles[mapStyle] || mapStyles.standard
   const selectedStationData = selectedStationId && heatmapData ? heatmapData.find((item) => item.station_id === selectedStationId) : null
   const selectedMetricLabel = metricConfig[selectedMetric]?.label || selectedMetric
@@ -264,6 +273,25 @@ export default function StationMap() {
 
   return (
     <div className="h-full w-full rounded-lg overflow-hidden shadow-lg relative">
+      {showHeatmap && (
+        <div className="absolute top-2 left-2 z-[1000] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 animate-fade-in">
+          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+            {selectedMetricLabel}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] text-gray-600 dark:text-gray-400">Low</span>
+            <div
+              className="h-3 w-24 rounded-sm"
+              style={{
+                background:
+                  'linear-gradient(to right, #0072B2, #009E73, #F0E442, #E69F00, #D55E00)',
+              }}
+            />
+            <span className="text-[9px] text-gray-600 dark:text-gray-400">High</span>
+          </div>
+        </div>
+      )}
       {selectedStationId && (
         <button
           onClick={handleClearSelection}
@@ -290,7 +318,6 @@ export default function StationMap() {
           stations={heatmapData}
           onStationClick={handleStationClick}
           clusteringEnabled={clusteringEnabled}
-          selectedMetric={selectedMetric}
         />
         )}
         {selectedStationData && (
