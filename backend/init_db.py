@@ -29,6 +29,7 @@ def _resolve_database_url() -> str:
 
 
 def _database_has_data(session_factory) -> bool:
+    #### Check if already loaded -> whether database has already has station loaded
     with session_factory() as session:
         station_count = session.query(Station).count()
         weather_count = session.query(WeatherData).count()
@@ -58,14 +59,17 @@ def init_database(force: bool = False) -> Tuple[int, int]:
 
     logger.info("Creating BOM database at %s", database_url)
     Base.metadata.drop_all(engine)
+    #### Create tables if doesn't exist
     Base.metadata.create_all(engine)
 
     session = Session()
 
     logger.info("Loading stations from Parquet...")
+    #### Load station from Parquet
     stations_df = pd.read_parquet(os.path.join(DATA_DIR, "bomstationsdb.parquet"))
 
     station_map = {}
+    #### Insert into database
     for _, row in stations_df.iterrows():
         station = Station(
             state=row["State"],
@@ -82,10 +86,13 @@ def init_database(force: bool = False) -> Tuple[int, int]:
     logger.info("Inserted %s stations", station_count)
 
     logger.info("Loading weather data from Parquet in batches...")
+    #### Load weather data -- in batches for memory efficiency
     parquet_path = os.path.join(DATA_DIR, "bomweatherdata.parquet")
     parquet_file = pq.ParquetFile(parquet_path)
 
     batch_size = int(os.getenv("INIT_DB_BATCH_SIZE", "10000"))
+    #### If loading all at once, there will be 6M rows in memory, uses 4-5GB RAM and having risk of out of memory error
+    #### Processing in batches of limiting 10k rows at a time will only use 200-300MB RAM and safe for production
     weather_count = 0
 
     for batch_index, record_batch in enumerate(parquet_file.iter_batches(batch_size=batch_size), start=1):
