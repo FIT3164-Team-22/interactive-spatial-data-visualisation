@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-export default function GuideModal({ isOpen, onClose, pdfUrl, downloadFileName = 'guide.pdf' }) {
+export default function GuideModal({ isOpen, onClose, pdfUrl, downloadFileName = 'guide.pdf', onOpenTutorial }) {
   const closeButtonRef = useRef(null)
 
   useEffect(() => {
@@ -51,25 +51,35 @@ export default function GuideModal({ isOpen, onClose, pdfUrl, downloadFileName =
         aria-hidden="true"
         onClick={() => onClose?.()}
       />
-      <div className="relative bg-white dark:bg-custom-card rounded-xl shadow-2xl border border-gray-300 dark:border-gray-600 w-full max-w-5xl mx-4 md:mx-6 lg:mx-12 h-[85vh] flex flex-col animate-scale-in">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Platform Guide</h2>
+      <div className="relative bg-white dark:bg-custom-card rounded-xl shadow-2xl border border-gray-300 dark:border-gray-600 w-full max-w-5xl mx-2 sm:mx-4 md:mx-6 lg:mx-12 h-[90vh] sm:h-[85vh] flex flex-col animate-scale-in">
+        <div className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">Platform Guide</h2>
           <button
             ref={closeButtonRef}
             onClick={() => onClose?.()}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 transition"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 transition text-xl sm:text-2xl"
             type="button"
             aria-label="Close guide dialog"
           >
-            X
+            ×
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-3 px-6 pt-4" aria-label="Guide actions">
+        <div className="flex flex-wrap gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 pt-3 sm:pt-4" aria-label="Guide actions">
+          <button
+            onClick={() => {
+              onClose?.()
+              onOpenTutorial?.()
+            }}
+            className="px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-[#5865F2] text-white rounded-lg hover:opacity-90 transition font-medium text-xs sm:text-sm"
+            type="button"
+          >
+            Review Tutorial
+          </button>
           <a
             href={pdfUrl}
             download={downloadFileName}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition font-medium text-sm"
+            className="px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-primary text-white rounded-lg hover:opacity-90 transition font-medium text-xs sm:text-sm"
           >
             Download PDF
           </a>
@@ -77,13 +87,13 @@ export default function GuideModal({ isOpen, onClose, pdfUrl, downloadFileName =
             href={pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:opacity-90 transition font-medium text-sm"
+            className="px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:opacity-90 transition font-medium text-xs sm:text-sm"
           >
             Open in New Tab
           </a>
         </div>
 
-        <div className="flex-1 mt-4 px-6 pb-10">
+        <div className="flex-1 mt-3 sm:mt-4 px-3 sm:px-4 md:px-6 pb-6 sm:pb-8 md:pb-10 min-h-0">
           <div className="w-full h-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <iframe
               title="Guide PDF preview"
@@ -92,7 +102,7 @@ export default function GuideModal({ isOpen, onClose, pdfUrl, downloadFileName =
               loading="lazy"
             />
           </div>
-          <p className="mt-3 text-xs text-gray-600 dark:text-gray-400">
+          <p className="mt-2 sm:mt-3 text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">
             If the preview does not load, use the buttons above to open the guide in a new tab or download it locally.
           </p>
         </div>
