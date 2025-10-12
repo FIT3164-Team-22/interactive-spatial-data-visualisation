@@ -16,7 +16,7 @@ const InsightsPanel = lazy(() => import('../Insights/InsightsPanel'))
 
 const guidePdfUrl = import.meta.env.VITE_GUIDE_PDF_URL || '/guide.pdf'
 
-export function DashboardContent({ isSidebarCollapsed }) {
+export function DashboardContent({ isSidebarCollapsed, onOpenWelcome }) {
   const { filters } = useFilters()
   const { isDark, toggleTheme } = useTheme()
   const [chartView, setChartView] = useState('timeseries')
@@ -84,6 +84,7 @@ export function DashboardContent({ isSidebarCollapsed }) {
   }
 
   const pageTitle = useMemo(() => 'Meteorological Data Dashboard', [])
+  const dateRange = useMemo(() => '2019 - Aug 2025', [])
 
   return (
     <div className="flex-1 flex flex-col p-4 md:p-6 pb-0 overflow-auto bg-background dark:bg-custom-bg">
@@ -93,6 +94,47 @@ export function DashboardContent({ isSidebarCollapsed }) {
           <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-1">
             Interactive visualization of Australian Bureau of Meteorology weather data
           </p>
+
+          <div className="flex items-center justify-center sm:justify-start gap-3 mt-2 text-xs">
+            {/* Station count badge */}
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 dark:bg-primary/20 rounded-full animate-fade-in">
+              <svg
+                className="w-3 h-3 text-primary animate-pulse"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.05 4.05A7 7 0 0119.91 10a7 7 0 01-14.86-5.95zM10 11a1 1 0 110-2 1 1 0 010 2z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="font-semibold text-primary">
+                377 stations
+              </span>
+            </span>
+
+            {/* Date range badge */}
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 dark:bg-primary/20 rounded-full animate-fade-in"
+              style={{ animationDelay: '0.1s' }}
+            >
+              <svg
+                className="w-3 h-3 text-primary"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M6 2a1 1 0 00-1 1v1H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2h-.1V3a1 1 0 00-2 0v1H7V3a1 1 0 00-1-1zm1 7a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="font-semibold text-primary">
+                {dateRange}
+              </span>
+            </span>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap justify-center">
           <button
@@ -121,8 +163,8 @@ export function DashboardContent({ isSidebarCollapsed }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 mb-4 lg:min-h-[600px] auto-rows-auto">
-        <div className="lg:col-span-2 min-w-0 bg-white dark:bg-custom-card rounded-lg shadow-lg p-4 hover:shadow-2xl transition-all duration-300 h-[500px] lg:h-full border border-gray-300 dark:border-gray-600 relative animate-fade-in">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-5 mb-3 md:mb-4 lg:min-h-[600px] auto-rows-auto">
+        <div className="lg:col-span-2 min-w-0 bg-white dark:bg-custom-card rounded-lg shadow-lg p-3 md:p-4 hover:shadow-2xl transition-all duration-300 h-[400px] md:h-[500px] lg:h-full border border-gray-300 dark:border-gray-600 relative animate-fade-in">
           {isResizing && (
             <div className="absolute inset-0 bg-white/80 dark:bg-custom-card/80 backdrop-blur-sm z-50 flex items-start justify-center pt-2 rounded-lg">
               <div className="w-full max-w-xs h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -137,7 +179,7 @@ export function DashboardContent({ isSidebarCollapsed }) {
           </ErrorBoundary>
         </div>
 
-        <div className="lg:col-span-1 min-w-0 bg-white dark:bg-custom-card rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 h-[500px] lg:h-full flex flex-col border border-gray-300 dark:border-gray-600 relative animate-fade-in" style={{ animationDelay: '0.1s' }}>
+        <div className="lg:col-span-1 min-w-0 bg-white dark:bg-custom-card rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 h-[400px] md:h-[500px] lg:h-full flex flex-col border border-gray-300 dark:border-gray-600 relative animate-fade-in" style={{ animationDelay: '0.1s' }}>
           {isResizing && (
             <div className="absolute inset-0 bg-white/80 dark:bg-custom-card/80 backdrop-blur-sm z-50 flex items-start justify-center pt-2 rounded-lg">
               <div className="w-full max-w-xs h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -148,7 +190,7 @@ export function DashboardContent({ isSidebarCollapsed }) {
           <div className="flex gap-2 p-2 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Chart views">
             <button
               onClick={() => setChartView('timeseries')}
-              className={`flex-1 sm:flex-none px-3 py-1 text-sm rounded transition ${
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 sm:py-1 text-xs sm:text-sm rounded transition ${
                 chartView === 'timeseries'
                   ? 'bg-primary text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -161,7 +203,7 @@ export function DashboardContent({ isSidebarCollapsed }) {
             </button>
             <button
               onClick={() => setChartView('distribution')}
-              className={`flex-1 sm:flex-none px-3 py-1 text-sm rounded transition ${
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 sm:py-1 text-xs sm:text-sm rounded transition ${
                 chartView === 'distribution'
                   ? 'bg-primary text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -183,8 +225,8 @@ export function DashboardContent({ isSidebarCollapsed }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 mt-0 pb-4">
-        <div className="h-auto lg:h-[280px] overflow-y-auto bg-white dark:bg-custom-card rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 p-4 lg:p-6 hover:shadow-2xl transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+      <div className="flex flex-col gap-3 md:gap-4 mt-0 pb-3 md:pb-4">
+        <div className="h-auto lg:h-[280px] overflow-y-auto bg-white dark:bg-custom-card rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 p-3 md:p-4 lg:p-6 hover:shadow-2xl transition-all duration-300 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <ErrorBoundary>
             <Suspense fallback={<SkeletonLoader type="stats" />}>
               <StatisticsPanel />
@@ -215,6 +257,7 @@ export function DashboardContent({ isSidebarCollapsed }) {
         onClose={handleGuideClose}
         pdfUrl={guidePdfUrl}
         downloadFileName='interactive-spatial-data-visualisation-guide.pdf'
+        onOpenTutorial={onOpenWelcome}
       />
     </div>
   )
