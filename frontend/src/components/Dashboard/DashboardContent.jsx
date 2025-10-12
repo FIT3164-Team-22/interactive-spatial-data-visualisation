@@ -88,7 +88,7 @@ export function DashboardContent({ isSidebarCollapsed, onOpenWelcome }) {
 
   return (
     <div className="flex-1 flex flex-col p-4 md:p-6 pb-0 overflow-auto bg-background dark:bg-custom-bg">
-      <div className="mb-2 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-center gap-3">
         <div className={`transition-all duration-300 text-center sm:text-left ${isSidebarCollapsed ? 'sm:ml-12 md:ml-16' : 'ml-0'}`}>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">{pageTitle}</h1>
           <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-1">
@@ -190,7 +190,7 @@ export function DashboardContent({ isSidebarCollapsed, onOpenWelcome }) {
           <div className="flex gap-2 p-2 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Chart views">
             <button
               onClick={() => setChartView('timeseries')}
-              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 sm:py-1 text-xs sm:text-sm rounded transition ${
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 sm:py-1 text-xs sm:text-sm rounded transition flex items-center justify-center gap-1.5 ${
                 chartView === 'timeseries'
                   ? 'bg-primary text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -199,11 +199,14 @@ export function DashboardContent({ isSidebarCollapsed, onOpenWelcome }) {
               role="tab"
               aria-selected={chartView === 'timeseries'}
             >
-              Time Series
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+              <span>Time Series</span>
             </button>
             <button
               onClick={() => setChartView('distribution')}
-              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 sm:py-1 text-xs sm:text-sm rounded transition ${
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 sm:py-1 text-xs sm:text-sm rounded transition flex items-center justify-center gap-1.5 ${
                 chartView === 'distribution'
                   ? 'bg-primary text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -212,7 +215,10 @@ export function DashboardContent({ isSidebarCollapsed, onOpenWelcome }) {
               role="tab"
               aria-selected={chartView === 'distribution'}
             >
-              Distribution
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>Distribution</span>
             </button>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
