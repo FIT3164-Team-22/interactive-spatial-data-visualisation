@@ -11,7 +11,11 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Unexpected UI error', error, errorInfo)
+    // Log error in development only, silent in production
+    // In production, this could be sent to an error tracking service like Sentry
+    if (import.meta.env.DEV) {
+      console.error('Unexpected UI error', error, errorInfo)
+    }
   }
 
   render() {

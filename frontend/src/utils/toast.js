@@ -49,9 +49,9 @@ class Toast {
     toast.classList.add(colors[type] || colors.info)
 
     const icons = {
-      success: '\\u2713',
-      error: '\\u2717',
-      info: '\\u2139',
+      success: '\u2713',
+      error: '\u2717',
+      info: '\u2139',
       warning: '!',
     }
 
