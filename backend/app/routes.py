@@ -10,6 +10,7 @@ from app.services import (
     statistics_service,
     weather_service,
     insights_service,
+    trend_service,
 )
 from app.utils.validators import (
     handle_validation_error,
@@ -397,4 +398,57 @@ def get_statistics():
         return handle_validation_error(exc)
     except Exception:  # pragma: no cover - safety net
         current_app.logger.exception("Failed to calculate statistics")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@api_bp.route("/weather/trend")
+@limiter.limit("20 per minute")
+def get_trend_analysis():
+    """
+    Calculate trend analysis for a metric over time using linear regression.
+    ---
+    parameters:
+      - in: query
+        name: station_ids
+        type: string
+      - in: query
+        name: metric
+        type: string
+        description: Metric to analyze (temperature, rainfall, humidity, wind, evapotranspiration)
+      - in: query
+        name: start_date
+        type: string
+        required: true
+      - in: query
+        name: end_date
+        type: string
+        required: true
+    responses:
+      200:
+        description: Trend analysis results
+    """
+    try:
+        station_ids = validate_station_ids(request.args.get("station_ids"))
+        start_date = validate_date(request.args.get("start_date"), "start_date")
+        end_date = validate_date(request.args.get("end_date"), "end_date")
+        metric = request.args.get("metric", "temperature").lower()
+
+        if metric not in ["temperature", "rainfall", "humidity", "wind", "evapotranspiration"]:
+            raise ValueError(f"Invalid metric: {metric}")
+
+        if not start_date or not end_date:
+            raise ValueError("Both start_date and end_date are required")
+
+        trend = trend_service.calculate_trend(
+            station_ids=station_ids,
+            metric=metric,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return jsonify(trend)
+
+    except ValueError as exc:
+        return handle_validation_error(exc)
+    except Exception:  # pragma: no cover - safety net
+        current_app.logger.exception("Failed to calculate trend")
         return jsonify({"error": "Internal server error"}), 500
