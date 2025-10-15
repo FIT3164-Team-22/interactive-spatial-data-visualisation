@@ -85,14 +85,6 @@ export default function FilterSidebar({ onCollapseChange }) {
 
   const { data: states } = useStates()
 
-  // Auto-reset state filter when a station is selected
-  useEffect(() => {
-    if (selectedStationId && selectedState) {
-      setSelectedState('')
-      toast.info('Region filter reset to "All Australia" when analyzing a specific station')
-    }
-  }, [selectedStationId, selectedState, setSelectedState])
-
   const validateDates = useCallback(
     (nextStart, nextEnd) => {
       // Check if start is after end
@@ -345,7 +337,7 @@ export default function FilterSidebar({ onCollapseChange }) {
                 <span aria-hidden="true" className="text-gray-500 dark:text-gray-400 font-semibold">?</span>
               </Tooltip>
             </div>
-            {selectedStationId && (
+            {selectedState && (
               <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
                 <div className="flex items-start gap-2">
                   <svg className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -353,10 +345,10 @@ export default function FilterSidebar({ onCollapseChange }) {
                   </svg>
                   <div>
                     <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
-                      Station-specific analysis
+                      Showing {selectedState} stations only
                     </p>
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                      Region filter is disabled. Click on the map background to deselect and re-enable state filtering.
+                      Only stations from {selectedState} are visible on the map. Select "All Australia" to view stations from other states.
                     </p>
                   </div>
                 </div>
@@ -365,10 +357,7 @@ export default function FilterSidebar({ onCollapseChange }) {
             <select
               value={selectedState}
               onChange={(event) => setSelectedState(event.target.value)}
-              disabled={!!selectedStationId}
-              className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition bg-white dark:bg-custom-card text-gray-900 dark:text-gray-100 ${
-                selectedStationId ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition bg-white dark:bg-custom-card text-gray-900 dark:text-gray-100"
             >
               <option value="">All Australia</option>
               {states?.map((state) => (

@@ -207,9 +207,14 @@ const MapInteractionLayer = ({ onMapClick }) => {
 }
 
 export default function StationMap() {
-  const { selectedMetric, setSelectedStationId, selectedStationId, mapStyle, clusteringEnabled, showStations, showHeatmap, startDate, endDate } = useFilters()
+  const { selectedMetric, setSelectedStationId, selectedStationId, selectedState, mapStyle, clusteringEnabled, showStations, showHeatmap, startDate, endDate } = useFilters()
   const shouldFetchHeatmap = showHeatmap || showStations || Boolean(selectedStationId)
   const { data: heatmapData = [], isLoading, error } = useHeatmapData(selectedMetric, startDate, endDate, { enabled: shouldFetchHeatmap })
+
+  // Filter stations by selected state
+  const filteredHeatmapData = selectedState
+    ? heatmapData.filter((station) => station.state === selectedState)
+    : heatmapData
 
   const handleStationClick = (stationId) => {
     setSelectedStationId(stationId)
@@ -260,8 +265,14 @@ export default function StationMap() {
     )
   }
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+
   const currentMapStyle = mapStyles[mapStyle] || mapStyles.standard
-  const selectedStationData = selectedStationId && heatmapData ? heatmapData.find((item) => item.station_id === selectedStationId) : null
+  const selectedStationData = selectedStationId && filteredHeatmapData ? filteredHeatmapData.find((item) => item.station_id === selectedStationId) : null
   const selectedMetricLabel = metricConfig[selectedMetric]?.label || selectedMetric
   const selectedMetricUnit = (() => {
     if (selectedMetric === 'temperature') return '°C'
@@ -275,9 +286,14 @@ export default function StationMap() {
     <div className="h-full w-full rounded-lg overflow-hidden shadow-lg relative">
       {showHeatmap && (
         <div className="absolute top-2 left-2 z-[1000] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 animate-fade-in">
-          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
             {selectedMetricLabel}
           </p>
+          {startDate && endDate && (
+            <p className="text-[8px] text-gray-500 dark:text-gray-400 mb-1.5">
+              {formatDate(startDate)} – {formatDate(endDate)}
+            </p>
+          )}
 
           <div className="flex items-center gap-2">
             <span className="text-[9px] text-gray-600 dark:text-gray-400">Low</span>
@@ -312,10 +328,10 @@ export default function StationMap() {
       >
         <MapInteractionLayer onMapClick={handleClearSelection} />
         <TileLayer url={currentMapStyle.url} attribution={currentMapStyle.attribution} />
-        {showHeatmap && <HeatmapLayer data={heatmapData} metric={selectedMetric} />}
+        {showHeatmap && <HeatmapLayer data={filteredHeatmapData} metric={selectedMetric} />}
         {showStations && (
         <StationMarkers
-          stations={heatmapData}
+          stations={filteredHeatmapData}
           onStationClick={handleStationClick}
           clusteringEnabled={clusteringEnabled}
         />

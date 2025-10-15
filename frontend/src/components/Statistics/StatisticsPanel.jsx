@@ -78,6 +78,12 @@ export default function StatisticsPanel() {
     'Evapotranspiration': 'Evapotranspiration variability dominates the selected dataset.',
   }
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A'
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -85,6 +91,11 @@ export default function StatisticsPanel() {
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Overview of statistical trends for the selected filters.
         </p>
+        {filters.startDate && filters.endDate && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Period: {formatDate(filters.startDate)} – {formatDate(filters.endDate)}
+          </p>
+        )}
       </header>
 
       <section

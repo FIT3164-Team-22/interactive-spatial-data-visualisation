@@ -140,19 +140,13 @@ The sidebar provides comprehensive filtering and customization options.
      - Northern Territory (NT)
      - Australian Capital Territory (ACT)
 
-#### Station Selection Priority ⚠️
+#### Region & Station Filtering
 
-**IMPORTANT**: When you select a specific station on the map, the region filter automatically:
-- Resets to "All Australia"
-- Becomes disabled (grayed out)
-- Shows a **red warning box** explaining the behavior
+When a state/region is selected, the map shows only stations from that state.
 
-**Why?** This prevents conflicting filters. For example, analyzing a Sydney station (in NSW) with the region set to Victoria would produce no data.
-
-**How to re-enable region filtering:**
-- Click anywhere on the map to deselect the station
-- The region dropdown will become active again
-- You can then select a state/territory to analyze
+- To view stations from other states, set Region to "All Australia".
+- Selecting a station does not change or disable the Region filter.
+- You may see a notice such as: "Showing WA stations only — Only stations from WA are visible on the map. Select 'All Australia' to view stations from other states."
 
 #### Additional Sidebar Controls
 
@@ -194,19 +188,10 @@ Displays how metrics change over time.
 
 Shows the statistical distribution of metric values.
 
-**Chart Types**:
-
-1. **Histogram**:
+**Histogram**:
    - Displays frequency distribution
    - Shows how often values fall within ranges
    - Helps identify typical vs. extreme values
-
-2. **Box Plot**:
-   - Shows quartiles and outliers
-   - Median line in the center
-   - Box represents 25th-75th percentile
-   - Whiskers show min/max (excluding outliers)
-   - Outliers plotted as individual points
 
 **Use Cases**:
 - Identify data spread and variability
@@ -449,7 +434,8 @@ The dashboard supports URL parameters for sharing specific views:
 **Solutions**:
 - Reset filters to defaults
 - Try a different date range
-- Deselect station to re-enable region filter
+- Set Region to "All Australia" to view stations from all states
+- Clear station selection to see all stations within the current region
 - Refresh the page
 
 #### Charts Not Loading
@@ -579,7 +565,7 @@ If you encounter issues not covered here:
 **Backend**:
 - Python 3.11+
 - Flask (web framework)
-- PostgreSQL (database)
+- SQLite (database)
 - SQLAlchemy (ORM)
 - NumPy/SciPy (statistical analysis)
 

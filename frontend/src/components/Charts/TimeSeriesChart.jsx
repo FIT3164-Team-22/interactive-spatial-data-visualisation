@@ -21,6 +21,36 @@ export default function TimeSeriesChart() {
     return Math.max(0, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
   }, [startDate, endDate])
 
+  const aggregationCount = useMemo(() => {
+    if (!startDate || !endDate) return null
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    if (daysDifference <= 0) return { count: 0, unit: 'day' }
+
+    switch (aggregation) {
+      case 'weekly': {
+        const count = Math.max(1, Math.ceil(daysDifference / 7))
+        return { count, unit: 'week' }
+      }
+      case 'monthly': {
+        const count = Math.max(
+          1,
+          (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1,
+        )
+        return { count, unit: 'month' }
+      }
+      case 'yearly': {
+        const count = Math.max(1, end.getFullYear() - start.getFullYear() + 1)
+        return { count, unit: 'year' }
+      }
+      case 'daily':
+      default: {
+        return { count: daysDifference, unit: 'day' }
+      }
+    }
+  }, [startDate, endDate, aggregation, daysDifference])
+
   const availableAggregations = useMemo(() => {
     const options = [{ value: 'daily', label: 'Daily' }]
     if (daysDifference >= 7) {
@@ -52,6 +82,12 @@ export default function TimeSeriesChart() {
 
   const config = metricConfig[selectedMetric] || metricConfig.temperature
   const stationName = weatherData?.[0]?.station_name || 'Station'
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A'
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
 
   const chartData = useMemo(() => {
     if (!weatherData) return []
@@ -244,23 +280,35 @@ export default function TimeSeriesChart() {
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <label className="text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-300" htmlFor="aggregation-select">
-            Period
-          </label>
-          <select
-            id="aggregation-select"
-            value={aggregation}
-            onChange={(event) => setAggregation(event.target.value)}
-            className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary focus:border-transparent transition bg-white dark:bg-custom-card text-gray-900 dark:text-gray-100"
-          >
-            {availableAggregations.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">({daysDifference} days)</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <label className="text-[10px] sm:text-xs font-medium text-gray-700 dark:text-gray-300" htmlFor="aggregation-select">
+              Period
+            </label>
+            <select
+              id="aggregation-select"
+              value={aggregation}
+              onChange={(event) => setAggregation(event.target.value)}
+              className="px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary focus:border-transparent transition bg-white dark:bg-custom-card text-gray-900 dark:text-gray-100"
+            >
+              {availableAggregations.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {aggregationCount && (
+              <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                ({aggregationCount.count} {aggregationCount.unit}
+                {aggregationCount.count !== 1 ? 's' : ''})
+              </span>
+            )}
+          </div>
+          {startDate && endDate && (
+            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+              {formatDate(startDate)} – {formatDate(endDate)}
+            </span>
+          )}
         </div>
       </div>
       <div ref={chartRef} className="flex-1 min-h-0">

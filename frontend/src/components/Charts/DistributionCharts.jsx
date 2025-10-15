@@ -23,6 +23,12 @@ export default function DistributionCharts() {
   const config = metricConfig[selectedMetric] || metricConfig.temperature
   const stationName = weatherData?.[0]?.station_name || 'Station'
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A'
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+
   const values = useMemo(
     () =>
       weatherData
@@ -130,6 +136,12 @@ export default function DistributionCharts() {
           {isExporting ? 'Exporting...' : 'Export PNG'}
         </button>
       </div>
+
+      {startDate && endDate && (
+        <div className="mb-2 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+          {formatDate(startDate)} – {formatDate(endDate)}
+        </div>
+      )}
 
       <div ref={chartRef} className="flex-1 min-h-0 overflow-y-auto space-y-4">
         <div>

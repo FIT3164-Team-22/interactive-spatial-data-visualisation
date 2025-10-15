@@ -174,8 +174,8 @@ export default function WelcomeModal({ isOpen, onClose }) {
             <li><strong>Region Filter:</strong> Filter stations by Australian states and territories (NSW, VIC, QLD, SA, WA, TAS, NT, ACT)</li>
             <li><strong>Map Options:</strong> Toggle heatmap visualization and switch between different map styles</li>
           </ul>
-          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/30 rounded text-sm text-gray-700 dark:text-gray-300 border border-red-200 dark:border-red-700">
-            <strong>⚠️ Important:</strong> When you click a specific station on the map, the region filter automatically resets to "All Australia" and becomes disabled. This prevents conflicting filters (e.g., analyzing a Sydney station while NSW filter is active). Simply click anywhere on the map background to deselect the station and re-enable region filtering.
+          <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded text-sm text-gray-800 dark:text-gray-200 border border-yellow-200 dark:border-yellow-700">
+            <strong>Showing selected state only:</strong> Only stations from the chosen state are visible on the map. Select "All Australia" to view stations from other states.
           </div>
           <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-gray-700 dark:text-gray-300 border border-blue-200 dark:border-blue-700">
             <strong>Note:</strong> Pan evaporation and solar radiation metrics are excluded from this platform due to inconsistent data quality and limited relevance for general users.
