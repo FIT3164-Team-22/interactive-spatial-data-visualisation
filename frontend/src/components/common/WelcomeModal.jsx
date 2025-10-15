@@ -151,7 +151,7 @@ export default function WelcomeModal({ isOpen, onClose }) {
             <li><strong>Distribution Charts:</strong> View histograms showing the statistical spread and frequency of values</li>
             <li><strong>Aggregation options:</strong> Switch between Daily, Weekly, Monthly, and Yearly views to analyze data at different time scales</li>
             <li><strong>Trend indicators:</strong> See automatic trend analysis with arrows showing if metrics are increasing/decreasing over time</li>
-            <li><strong>Export charts:</strong> Download any chart as a PNG image for reports and presentations</li>
+            <li><strong>Export charts:</strong> Click the Export PNG button on any chart to download an image for reports and presentations</li>
           </ul>
           <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
             <p className="text-sm text-purple-800 dark:text-purple-200">

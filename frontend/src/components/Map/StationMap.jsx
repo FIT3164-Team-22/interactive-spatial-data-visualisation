@@ -285,26 +285,26 @@ export default function StationMap() {
   return (
     <div className="h-full w-full rounded-lg overflow-hidden shadow-lg relative">
       {showHeatmap && (
-        <div className="absolute top-2 left-2 z-[1000] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 animate-fade-in">
-          <p className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+        <div className="absolute top-2 left-2 z-[1000] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg px-2.5 py-2 md:px-4 md:py-3 animate-fade-in">
+          <p className="text-xs md:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
             {selectedMetricLabel}
           </p>
           {startDate && endDate && (
-            <p className="text-[8px] text-gray-500 dark:text-gray-400 mb-1.5">
+            <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mb-1.5 md:mb-2">
               {formatDate(startDate)} – {formatDate(endDate)}
             </p>
           )}
 
           <div className="flex items-center gap-2">
-            <span className="text-[9px] text-gray-600 dark:text-gray-400">Low</span>
+            <span className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400">Low</span>
             <div
-              className="h-3 w-24 rounded-sm"
+              className="h-3 w-24 md:h-4 md:w-32 rounded-sm"
               style={{
                 background:
                   'linear-gradient(to right, #0072B2, #009E73, #F0E442, #E69F00, #D55E00)',
               }}
             />
-            <span className="text-[9px] text-gray-600 dark:text-gray-400">High</span>
+            <span className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400">High</span>
           </div>
         </div>
       )}
@@ -346,19 +346,19 @@ export default function StationMap() {
         )}
       </MapContainer>
       {selectedStationData && (
-        <div className="absolute left-2 bottom-2 md:left-4 md:bottom-4 z-[1001] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl px-3 py-2 md:px-4 md:py-3 max-w-[calc(100%-4rem)] md:max-w-xs animate-fade-in">
+        <div className="absolute left-2 bottom-2 md:left-4 md:bottom-4 z-[1001] bg-white/95 dark:bg-custom-card/95 backdrop-blur-md border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl px-2 py-1.5 md:px-4 md:py-3 max-w-[80%] md:max-w-xs animate-fade-in">
           <div>
-            <p className="text-[10px] md:text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Selected station</p>
-            <h3 className="text-sm md:text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+            <p className="text-[9px] md:text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Selected station</p>
+            <h3 className="text-xs md:text-base font-semibold text-gray-900 dark:text-gray-100 leading-tight">
               {selectedStationData.station_name}
             </h3>
-            <p className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-[9px] md:text-xs text-gray-600 dark:text-gray-400 mt-1">
               {selectedStationData.state}
             </p>
             {typeof selectedStationData.value === 'number' && (
-              <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 mt-2">
+              <p className="text-[11px] md:text-sm text-gray-700 dark:text-gray-300 mt-2">
                 {selectedMetricLabel}: {' '}
-                <span className="text-base md:text-lg font-semibold text-primary">
+                <span className="text-sm md:text-lg font-semibold text-primary">
                   {selectedStationData.value.toFixed(2)}
                   {selectedMetricUnit ? ` ${selectedMetricUnit}` : ''}
                 </span>

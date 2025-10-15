@@ -14,6 +14,17 @@ export default function TimeSeriesChart() {
   const chartRef = useRef(null)
   const [isExporting, setIsExporting] = useState(false)
 
+  const axisTickStyle = useMemo(() => {
+    const fill = isDark ? '#9CA3AF' : '#6B7280'
+    return {
+      fontSize: 11,
+      fill,
+      fontFamily:
+        "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif",
+      letterSpacing: 0,
+    }
+  }, [isDark])
+
   const daysDifference = useMemo(() => {
     if (!startDate || !endDate) return 0
     const start = new Date(startDate)
@@ -184,6 +195,14 @@ export default function TimeSeriesChart() {
     toast.info('Exporting chart...')
 
     try {
+      // Ensure web fonts are loaded before rendering
+      if (typeof document !== 'undefined' && document.fonts?.ready) {
+        try {
+          await document.fonts.ready
+        } catch {
+          // ignore font loading errors
+        }
+      }
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(chartRef.current, {
         backgroundColor: isDark ? '#242429' : '#ffffff',
@@ -317,14 +336,14 @@ export default function TimeSeriesChart() {
             <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#4B5563' : '#E5E7EB'} />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 10, fill: isDark ? '#9CA3AF' : '#6B7280' }}
+              tick={axisTickStyle}
               angle={-45}
               textAnchor="end"
               height={60}
               stroke={isDark ? '#6B7280' : '#D1D5DB'}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: isDark ? '#9CA3AF' : '#6B7280' }}
+              tick={axisTickStyle}
               label={{ value: config.label, angle: -90, position: 'insideLeft', fontSize: 10, fill: isDark ? '#9CA3AF' : '#6B7280' }}
               stroke={isDark ? '#6B7280' : '#D1D5DB'}
             />

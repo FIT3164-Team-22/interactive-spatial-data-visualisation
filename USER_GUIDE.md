@@ -168,7 +168,7 @@ Displays how metrics change over time.
 **Features**:
 - Line chart showing temporal trends
 - Interactive tooltips with exact values
-- Zoom and pan capabilities
+- Responsive layout
 - Download as PNG image
 
 **Aggregation Levels**:
@@ -340,7 +340,7 @@ trend of approximately 0.69°C per year at this station.
 
 **Image Export**:
 1. Navigate to the desired chart view
-2. Click the download icon on the chart
+2. Click the Export PNG button on the chart
 3. Saves as PNG image file
 4. Suitable for reports, presentations, and documentation
 
@@ -371,7 +371,7 @@ The dashboard automatically adapts to different screen sizes:
 - Collapsible sidebar
 - Touch-friendly controls
 - Optimized chart sizes
-- Screen size warning for very small devices
+ 
 
 ---
 
@@ -385,15 +385,15 @@ The dashboard supports URL parameters for sharing specific views:
 ```
 ?metric=temperature&start_date=2024-01-01&end_date=2024-12-31
 ?state=NSW&metric=rainfall
-?station_id=066062&metric=humidity
+?station=66062&metric=humidity
 ```
 
 **Supported Parameters**:
-- `metric`: temperature, rainfall, humidity, wind_speed, evapotranspiration
+- `metric`: temperature, rainfall, humidity, wind, evapotranspiration
 - `start_date`: YYYY-MM-DD format
 - `end_date`: YYYY-MM-DD format
 - `state`: NSW, VIC, QLD, SA, WA, TAS, NT, ACT
-- `station_id`: BOM station ID
+- `station`: station ID (numeric)
 
 ### Keyboard Shortcuts
 
@@ -476,7 +476,6 @@ The dashboard supports URL parameters for sharing specific views:
 - Reduce date range before exporting
 - Allow popups for this site
 - Check browser download settings
-- Try different export format
 
 ### Browser Support
 
@@ -513,29 +512,23 @@ If you encounter issues not covered here:
 ### Metrics Definitions
 
 1. **Temperature (°C)**:
-   - Daily average temperature
-   - Calculated from hourly observations
-   - Precision: 0.1°C
+   - Daily maximum temperature (used in charts)
+   - Minimum temperature is included in statistics summaries
 
 2. **Rainfall (mm)**:
    - Daily total precipitation
    - Measured in millimeters
-   - Includes rain, drizzle, and melted snow
 
 3. **Humidity (%)**:
-   - Relative humidity percentage
-   - Average of 9am and 3pm observations
-   - Range: 0-100%
+   - Daily maximum relative humidity (used in charts)
+   - Minimum humidity is included in statistics summaries
 
 4. **Wind Speed (m/s)**:
-   - Average wind speed
+   - Daily average wind speed
    - Measured in meters per second
-   - 10-minute average
 
 5. **Evapotranspiration (mm)**:
-   - Daily evapotranspiration
-   - Calculated using meteorological data
-   - Represents water loss from soil and plants
+   - Daily evapotranspiration total
 
 ### Statistical Methods
 
@@ -545,8 +538,8 @@ If you encounter issues not covered here:
 - Significance Level: p < 0.05 (95% confidence)
 
 **Anomaly Detection**:
-- Threshold: ±2 standard deviations from mean
-- Method: Z-score analysis
+- Method: Percentage deviation from the average
+- Threshold: flagged when deviation is ~50% or more from the mean (with a minimum absolute difference)
 
 **Correlation Analysis**:
 - Method: Pearson correlation coefficient

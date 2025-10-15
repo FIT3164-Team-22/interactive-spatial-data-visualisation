@@ -228,7 +228,7 @@ export default function FilterSidebar({ onCollapseChange }) {
               <h3 id="time-period-heading" className="text-primary font-semibold text-sm uppercase tracking-wide">
                 Time Period
               </h3>
-              <Tooltip content="Filter data by date range between 2019 and 2025" position="right">
+              <Tooltip content="Filter data by date range between 2019 and Aug 2025" position="right">
                 <span aria-hidden="true" className="text-gray-500 dark:text-gray-400 font-semibold">?</span>
               </Tooltip>
             </div>
@@ -538,7 +538,7 @@ export default function FilterSidebar({ onCollapseChange }) {
               Interactive Spatial Data Visualization &mdash; Project 8, FIT3164 Team 22.
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-              Contributors: Rahul Pejathaya, Alice (Xinyi) Zhou, Abdullah Sabaa
+              Contributors: Rahul Pejathaya, Xinyi Zhou (Alice), Abdullah Sabaa
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
               Data sourced from the Australian Bureau of Meteorology FTP server.
