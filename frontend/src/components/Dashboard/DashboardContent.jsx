@@ -62,8 +62,35 @@ export function DashboardContent({ isSidebarCollapsed, onOpenWelcome }) {
       window.URL.revokeObjectURL(url)
       toast.success('Data exported successfully')
     } catch (error) {
-      const message = error?.message || 'Failed to export data'
-      toast.error(message)
+      // Handle blob error responses (need to parse JSON from blob)
+      let message = 'Failed to export data'
+
+      if (error?.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text()
+          const errorData = JSON.parse(text)
+          // Backend returns { error: "Validation Error", message: "actual error message" }
+          const errorMessage = errorData.message || errorData.error || message
+
+          // Check if it's the 20k row limit error
+          if (errorMessage.includes('maximum row limit') || errorMessage.includes('20000')) {
+            const isStateLevelExport = filters.state && !filters.selectedStation
+            if (isStateLevelExport) {
+              message = 'Export exceeds 20,000 row limit. Try selecting a specific station or narrowing the date range to reduce the data size.'
+            } else {
+              message = 'Export exceeds 20,000 row limit. Please narrow your date range.'
+            }
+          } else {
+            message = errorMessage
+          }
+        } catch {
+          // If parsing fails, use default message
+        }
+      } else if (error?.message) {
+        message = error.message
+      }
+
+      toast.error(message, 5000)
     } finally {
       setIsExporting(false)
       setExportType('')
